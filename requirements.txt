@@ -110,7 +110,7 @@ myst-parser>=2.0.0
 
 ### Optional Extras
 # GPU Acceleration (Optional)
-cupy>=12.0.0  # Requires CUDA
+# cupy>=12.0.0  # Requires CUDA
 # tensorflow-gpu>=2.12.0  # Optional GPU support
 #torch-cuda>=2.1.0  # CUDA-enabled PyTorch
 
