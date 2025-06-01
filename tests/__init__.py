@@ -1,0 +1,1 @@
+"""Test suite for Claude Desktop MCP Playground"""

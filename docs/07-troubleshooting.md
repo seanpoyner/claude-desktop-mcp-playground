@@ -16,7 +16,7 @@ source clean-env/bin/activate
 pip install --upgrade pip setuptools
 
 # Install with minimal dependencies
-pip install claude-desktop-mcp --no-deps
+pip install pg --no-deps
 ```
 
 ### 2. API Authentication Errors
@@ -139,7 +139,7 @@ def check_permissions():
     
     # Check key directories
     test_paths = [
-        os.path.expanduser('~/.claude-desktop-mcp'),
+        os.path.expanduser('~/.pg'),
         os.getcwd(),
         sys.prefix
     ]

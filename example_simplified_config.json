@@ -1,0 +1,25 @@
+{
+  "code-sandbox": {
+    "command": "/path/to/code-sandbox-mcp",
+    "args": [],
+    "env": {
+      "DOCKER_HOST": "unix:///var/run/docker.sock"
+    },
+    "enabled": true
+  },
+  "email-client": {
+    "command": "python",
+    "args": ["-m", "email_client.server"],
+    "env": {
+      "SMTP_SERVER": "smtp.gmail.com",
+      "SMTP_PORT": "587"
+    },
+    "enabled": true
+  },
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/workspace"],
+    "env": {},
+    "enabled": false
+  }
+}

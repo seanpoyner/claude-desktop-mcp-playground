@@ -2,55 +2,89 @@
 
 ## Introduction
 
-Claude Desktop Model Context Protocol (MCP) Playground is a framework for creating productive and intelligent workflows for the Claude Desktop application using mcp-servers. This guide will help you understand the basics and getting started.
+Claude Desktop MCP Playground is a Python framework for creating AI-powered productivity workflows using Claude Desktop's Model Context Protocol (MCP) servers. This guide will help you get started with managing your Claude Desktop configuration and building powerful AI workflows.
 
 ## Prerequisites
 
 Before beginning, ensure you have:
-- A compatible computer running [supported operating system]
+- **Claude Desktop application** installed and running
+- **Python 3.9+** (3.10+ recommended)
 - Basic understanding of command-line interfaces
-- Anthropic Claude API access
+- Administrative privileges to install packages
 - Required dependencies:
-  - Python 3.8+
-  - pip
-  - Virtual environment tool (uv recommended)
+  - pip or uv package manager
+  - Virtual environment support
+
+## What You'll Learn
+
+This guide covers:
+- Installing the Claude Desktop MCP configuration CLI
+- Managing MCP servers with simple commands
+- Converting between configuration formats
+- Setting up your first AI workflow
 
 ## Key Concepts
 
 ### What is Claude Desktop MCP?
 
-Claude Desktop MCP Playground is a modular platform that allows you to:
-- Create interconnected AI agents
-- Build complex workflow automation
-- Experiment with advanced productivity tools
-- Develop agentic systems with multiple components
+Model Context Protocol (MCP) is Claude Desktop's system for connecting with external tools and services. This playground provides:
+
+- **Configuration Management**: Easy CLI for managing MCP server configurations
+- **Simplified Workflows**: Convert complex JSON configs to readable key-value pairs
+- **Cross-Platform Support**: Works on macOS, Windows, and Linux
+- **Extensible Framework**: Build custom productivity workflows
 
 ### Core Components
 
-1. **Agent Framework**: Allows creation and management of AI agents
-2. **Workflow Orchestrator**: Coordinates complex task sequences
-3. **Resource Manager**: Handles computational resources and API interactions
-4. **Extensibility Layer**: Enables custom plugin development
+1. **Configuration Manager**: Handles Claude Desktop MCP server configs across platforms
+2. **CLI Tool**: Command-line interface for configuration management  
+3. **Simplified Format**: Easy-to-edit JSON structure with enable/disable flags
+4. **Import/Export System**: Convert between Claude Desktop and simplified formats
 
-## Initial Setup Steps
+## Quick Start
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git
-   cd claude-desktop-mcp-playground
-   ```
+### 1. Clone and Setup
 
-2. Create a virtual environment
-   ```bash
-   uv init
-   uv venv # Or python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+```bash
+git clone https://github.com/seanpoyner/pg-playground.git
+cd pg-playground
+```
 
-3. Install core dependencies
-   ```bash
-   uv pip install -r requirements.txt
-   ```
+### 2. Create Virtual Environment
+
+```bash
+# Using Python venv
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Or using uv (recommended)
+uv venv
+source .venv/bin/activate
+```
+
+### 3. Install the Package
+
+```bash
+pip install -e .
+```
+
+### 4. Verify Installation
+
+```bash
+playground --help
+# or use the short form:
+pg --help
+```
+
+### 5. Import Your Current Configuration
+
+```bash
+# Import current Claude Desktop config to simplified format
+pg config import
+
+# View what's configured
+pg config show
+```
 
 ## Next Steps
 

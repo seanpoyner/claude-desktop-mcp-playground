@@ -1,133 +1,207 @@
-# Basic Configuration for Claude Desktop MCP Playground
+# Basic Configuration Management
 
-## Configuration Overview
+## Overview
 
-The Claude Desktop MCP Playground uses a flexible configuration system to customize your workflow and agent environments.
+The Claude Desktop MCP Playground provides a powerful CLI for managing your Claude Desktop MCP server configurations. This guide covers the essential configuration management commands and workflows.
 
-## Configuration File Location
+## Configuration File Locations
 
-Configurations are managed through:
-- Global configuration: `~/.claude-desktop-mcp-playground/config.yaml`
-- Project-specific: `./mcp-config.yaml`
+The CLI automatically works with Claude Desktop's configuration files:
 
-## Core Configuration Sections
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
-### 1. API Settings
+### Simplified Configuration Format
 
-```yaml
-api:
-  provider: anthropic
-  model: claude-3-5-sonnet-20240620
-  max_tokens: 4096
-  temperature: 0.7
-  timeout: 60
+The CLI also uses a simplified format (`claude_desktop_simplified.json`) that's easier to edit:
+
+```json
+{
+  "server-name": {
+    "command": "python",
+    "args": ["-m", "my_module"],
+    "env": {"KEY": "value"},
+    "enabled": true
+  }
+}
 ```
 
-### 2. Agent Defaults
+## Essential CLI Commands
 
-```yaml
-agent_defaults:
-  max_iterations: 10
-  memory_size: 5
-  verbose: false
-  logging:
-    level: INFO
-    path: ./logs
-```
-
-### 3. Workflow Configurations
-
-```yaml
-workflows:
-  default_timeout: 3600  # 1 hour max per workflow
-  retry_attempts: 3
-  error_handling: 
-    mode: graceful
-    notification: email
-```
-
-## Environment Setup
-
-Create a `.env` file or use environment variables:
+### 1. Import Current Configuration
 
 ```bash
-# API Configuration
-CLAUDE_MCP_API_KEY=your_anthropic_api_key
-CLAUDE_MCP_WORKSPACE=/path/to/workspace
+# Import Claude Desktop config to simplified format
+pg config import
 
-# Logging Configuration
-CLAUDE_MCP_LOG_LEVEL=INFO
-CLAUDE_MCP_LOG_PATH=./logs
+# Import to custom file
+pg config import --output my_config.json
 ```
 
-## Customization Example
-
-Full configuration example:
-
-```yaml
-# ~/.claude-desktop-mcp/config.yaml
-version: 1.0
-
-api:
-  provider: anthropic
-  model: claude-3-5-sonnet-20240620
-  max_tokens: 4096
-  temperature: 0.7
-
-agent_defaults:
-  max_iterations: 10
-  memory_size: 5
-  verbose: false
-  logging:
-    level: INFO
-    path: ./logs
-
-workflows:
-  default_timeout: 3600
-  retry_attempts: 3
-  error_handling:
-    mode: graceful
-    notification: email
-
-plugins:
-  enabled:
-    - productivity_tracker
-    - code_assistant
-    - research_helper
-
-security:
-  encryption: true
-  api_key_protection: true
-```
-
-## Configuration Management Commands
+### 2. View Current Configuration
 
 ```bash
-# Validate configuration
-claude-desktop-mcp config validate
+# Show all configured servers
+pg config show
 
-# View current configuration
-claude-desktop-mcp config show
+# Show in JSON format
+pg config show --format json
+```
 
-# Reset to default configuration
-claude-desktop-mcp config reset
+### 3. Add New MCP Servers
+
+```bash
+# Add a Python-based server
+pg config add my-server "python" \
+  --args "-m" --args "my_module" \
+  --env "API_KEY=secret" --env "DEBUG=true"
+
+# Add a Node.js server
+pg config add node-server "node" \
+  --args "server.js" --args "--port" --args "3000"
+
+# Add a binary executable
+pg config add binary-server "/path/to/executable"
+```
+
+### 4. Remove Servers
+
+```bash
+# Remove a server (with confirmation)
+pg config remove my-server
+
+# Remove without confirmation
+pg config remove my-server --confirm
+```
+
+### 5. Validate Configuration
+
+```bash
+# Check configuration for errors
+pg config validate
+```
+
+### 6. Apply Simplified Configuration
+
+```bash
+# Apply changes from simplified format back to Claude Desktop
+pg config apply claude_desktop_simplified.json
+```
+
+## Working with Simplified Configuration
+
+### Example Workflow
+
+1. **Import your current config**:
+   ```bash
+   pg config import
+   ```
+
+2. **Edit the simplified file** (`claude_desktop_simplified.json`):
+   ```json
+   {
+     "filesystem": {
+       "command": "npx",
+       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+       "env": {},
+       "enabled": true
+     },
+     "email-client": {
+       "command": "python",
+       "args": ["-m", "email_client.server"],
+       "env": {
+         "SMTP_SERVER": "smtp.gmail.com",
+         "SMTP_PORT": "587"
+       },
+       "enabled": false
+     }
+   }
+   ```
+
+3. **Apply changes back to Claude Desktop**:
+   ```bash
+   pg config apply
+   ```
+
+4. **Restart Claude Desktop** for changes to take effect.
+
+### Simplified Format Benefits
+
+- **Easy editing**: Plain JSON with clear structure
+- **Enable/disable**: Toggle servers without removing them
+- **Version control**: Track configuration changes
+- **Backup**: Keep multiple configuration versions
+
+## Common Configuration Examples
+
+### Adding Popular MCP Servers
+
+```bash
+# Filesystem server for file operations
+pg config add filesystem "npx" \
+  --args "-y" --args "@modelcontextprotocol/server-filesystem" \
+  --args "/path/to/workspace"
+
+# GitHub integration
+pg config add github "npx" \
+  --args "-y" --args "@modelcontextprotocol/server-github" \
+  --env "GITHUB_TOKEN=your_token"
+
+# SQLite database access
+pg config add sqlite "npx" \
+  --args "-y" --args "@modelcontextprotocol/server-sqlite" \
+  --args "/path/to/database.db"
+
+# Custom Python server
+pg config add my-python-server "python" \
+  --args "-m" --args "my_package.server" \
+  --env "CONFIG_PATH=/etc/myserver.conf"
 ```
 
 ## Best Practices
 
-- Keep API keys secure and out of version control
-- Use environment-specific configurations
-- Regularly update and review your settings
-- Use encryption for sensitive configurations
+### Security
+- **Never commit API keys**: Use environment variables for sensitive data
+- **Use the `env` section**: Store configuration in environment variables
+- **Regular backups**: Export simplified configs regularly
+
+### Organization  
+- **Descriptive names**: Use clear server names like `email-client`, not `server1`
+- **Enable/disable**: Use the `enabled` flag instead of deleting servers
+- **Documentation**: Comment your simplified config files
+
+### Workflow
+- **Test changes**: Use `validate` before applying configurations
+- **Incremental updates**: Make small changes and test frequently
+- **Version control**: Track your simplified config files in git
 
 ## Troubleshooting
 
-- Ensure YAML syntax is correct
-- Check file permissions
-- Verify API credentials
-- Validate configuration with provided commands
+### Common Issues
+
+1. **Server not appearing in Claude Desktop**:
+   - Restart Claude Desktop after configuration changes
+   - Check that `enabled: true` in simplified config
+   - Verify command paths are correct
+
+2. **Command not found errors**:
+   - Check that executables are in your PATH
+   - Use absolute paths for custom binaries
+   - Verify npm packages are globally installed
+
+3. **Permission denied**:
+   - Check file permissions on executables
+   - Ensure Claude Desktop has necessary access rights
+
+4. **Configuration validation errors**:
+   ```bash
+   pg config validate
+   ```
+   - Fix any reported issues before applying
 
 ## Next Steps
 
-- [Advanced Server Setup](04-advanced-setup.md)
-- [Productivity Workflows](05-productivity-workflows.md)
+- [Learn Advanced Server Setup](04-advanced-setup.md)
+- [Explore Productivity Workflows](05-productivity-workflows.md)
+- [Troubleshooting Guide](07-troubleshooting.md)

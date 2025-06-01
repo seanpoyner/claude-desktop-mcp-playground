@@ -49,7 +49,8 @@ setup(
     python_requires='>=3.9',
     entry_points={
         'console_scripts': [
-            'claude-desktop-mcp=claude_desktop_mcp.cli:main',
+            'playground=claude_desktop_mcp.cli:main',
+            'pg=claude_desktop_mcp.cli:main',
         ],
     },
     keywords='ai productivity workflow agent platform claude anthropic',

@@ -2,7 +2,33 @@
 
 ## Overview
 
-This project contains tutorials and guides for setting up and experimenting with Claude Desktop Multi-Component Platform (MCP) servers for enhanced productivity and agentic workflows.
+Claude Desktop MCP Playground is a Python framework for creating AI-powered productivity workflows using Claude Desktop's Model Context Protocol (MCP) servers. The project enables agentic systems with interconnected AI agents and complex workflow automation.
+
+### Key Features
+
+- **🛠️ Configuration Management CLI** - Easy-to-use command-line tool for managing Claude Desktop MCP server configurations
+- **🔄 Simplified Configuration Format** - Convert between Claude Desktop's JSON format and user-friendly key-value pairs
+- **🌍 Cross-Platform Support** - Works seamlessly on macOS, Windows, and Linux
+- **🚀 Quick Setup** - Streamlined installation and configuration process
+- **🧪 Comprehensive Testing** - Fully tested codebase with extensive test coverage
+
+### Quick Start
+
+```bash
+# Install the package
+pip install -e .
+
+# Import your current Claude Desktop configuration
+playground config import
+# or use the short form:
+pg config import
+
+# View configured MCP servers
+pg config show
+
+# Add a new server
+pg config add my-server "python" --args "-m" --args "my_module"
+```
 
 ## Table of Contents
 
