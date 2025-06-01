@@ -1,8 +1,8 @@
-# Getting Started with Claude Desktop MCP
+# Getting Started with Claude Desktop MCP Playground
 
 ## Introduction
 
-Claude Desktop Multi-Component Platform (MCP) is a powerful framework for creating productive and intelligent workflow environments. This guide will help you understand the basics and get started with your MCP setup.
+Claude Desktop Model Context Protocol (MCP) Playground is a framework for creating productive and intelligent workflows for the Claude Desktop application using mcp-servers. This guide will help you understand the basics and getting started.
 
 ## Prerequisites
 
@@ -13,13 +13,13 @@ Before beginning, ensure you have:
 - Required dependencies:
   - Python 3.8+
   - pip
-  - Virtual environment tool (venv or conda recommended)
+  - Virtual environment tool (uv recommended)
 
 ## Key Concepts
 
 ### What is Claude Desktop MCP?
 
-Claude Desktop MCP is a modular platform that allows you to:
+Claude Desktop MCP Playground is a modular platform that allows you to:
 - Create interconnected AI agents
 - Build complex workflow automation
 - Experiment with advanced productivity tools
@@ -36,19 +36,19 @@ Claude Desktop MCP is a modular platform that allows you to:
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-org/claude-desktop-mcp.git
-   cd claude-desktop-mcp
+   git clone https://github.com/your-org/claude-desktop-mcp-playground.git
+   cd claude-desktop-mcp-playground
    ```
 
 2. Create a virtual environment
    ```bash
-   python -m venv mcp-env
-   source mcp-env/bin/activate  # On Windows: mcp-env\Scripts\activate
+   uv venv # Or python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. Install core dependencies
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 
 ## Next Steps

@@ -1,0 +1,19 @@
+api:
+  provider: anthropic
+  model: claude-3-5-sonnet-20240620
+  max_tokens: 4096
+  temperature: 0.7
+  timeout: 60
+agent_defaults:
+  max_iterations: 10
+  memory_size: 5
+  verbose: false
+  logging:
+    level: INFO
+    path: ./logs
+workflows:
+  default_timeout: 3600  # 1 hour max per workflow
+  retry_attempts: 3
+  error_handling: 
+    mode: graceful
+    notification: email
