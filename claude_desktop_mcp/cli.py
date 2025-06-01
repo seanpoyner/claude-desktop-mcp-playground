@@ -15,6 +15,37 @@ from .setup_wizard import setup
 from .server_registry import MCPServerRegistry
 
 
+def safe_emoji(emoji: str, fallback: str = None) -> str:
+    """Safely display emoji or fallback character for encoding issues"""
+    # Default fallback mappings
+    fallback_map = {
+        '✓': '[OK]',
+        '✗': '[ERROR]', 
+        '🔍': '[SEARCH]',
+        '📋': '[LIST]',
+        '🟢': '[RUNNING]',
+        '🔴': '[STOPPED]',
+        '🏛️': '[OFFICIAL]',
+        '🌟': '[COMMUNITY]',
+        '⚠️': '[WARNING]',
+        '📦': '[PACKAGE]',
+        '🖥️': '[PLATFORM]',
+        '✅': '[SUCCESS]',
+        '🔄': '[RESTART]',
+        '💡': '[TIP]'
+    }
+    
+    if fallback is None:
+        fallback = fallback_map.get(emoji, emoji)
+    
+    try:
+        # Test if the emoji can be encoded with the current encoding
+        emoji.encode(sys.stdout.encoding or 'utf-8')
+        return emoji
+    except (UnicodeEncodeError, LookupError):
+        return fallback
+
+
 @click.group()
 @click.version_option(version="0.1.0", prog_name="pg")
 def main():
@@ -269,7 +300,7 @@ def list(output_format: str, status: bool, npm_global: bool):
             display_servers_table(servers, npm_packages if npm_global else [], status)
             
     except Exception as e:
-        click.echo(f"✗ Error listing servers: {e}", err=True)
+        click.echo(f"{safe_emoji('✗', 'X')} Error listing servers: {e}", err=True)
         sys.exit(1)
 
 
@@ -446,7 +477,7 @@ def search(query: str, category: str, output_format: str):
             display_search_results(results)
             
     except Exception as e:
-        click.echo(f"✗ Error searching servers: {e}", err=True)
+        click.echo(f"{safe_emoji('✗', 'X')} Error searching servers: {e}", err=True)
         sys.exit(1)
 
 
@@ -552,7 +583,7 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
         instance_name = name or server_id
         
         if dry_run:
-            click.echo("🔍 Dry run - would install:")
+            click.echo(f"{safe_emoji('🔍', 'Search')} Dry run - would install:")
             click.echo(f"  Name: {instance_name}")
             click.echo(f"  Command: {install_config['command']}")
             click.echo(f"  Args: {' '.join(install_config['args'])}")
@@ -608,23 +639,23 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
 
 def display_search_results(results: List[Dict[str, Any]]):
     """Display search results in a formatted table"""
-    click.echo(f"🔍 Found {len(results)} MCP server(s):")
+    click.echo(f"{safe_emoji('🔍', 'Search')} Found {len(results)} MCP server(s):")
     click.echo("=" * 50)
     
     for server in results:
-        category_emoji = "🏛️" if server['category'] == 'official' else "🌟"
+        category_emoji = safe_emoji("🏛️") if server['category'] == 'official' else safe_emoji("🌟")
         click.echo(f"\n{category_emoji} {server['id']} - {server['name']}")
         click.echo(f"   {server['description']}")
         
         if server.get('package'):
-            click.echo(f"   📦 Package: {server['package']}")
+            click.echo(f"   {safe_emoji('📦', '[PACKAGE]')} Package: {server['package']}")
         
         # Show platform requirement if any
         if server.get('platform'):
-            click.echo(f"   🖥️  Platform: {server['platform']}")
+            click.echo(f"   {safe_emoji('🖥️')} Platform: {server['platform']}")
     
-    click.echo(f"\n💡 Use 'pg config info <server_id>' for detailed information")
-    click.echo("💡 Use 'pg config install <server_id>' to install a server")
+    click.echo(f"\n{safe_emoji('💡')} Use 'pg config info <server_id>' for detailed information")
+    click.echo(f"{safe_emoji('💡')} Use 'pg config install <server_id>' to install a server")
 
 
 def display_server_info(server: Dict[str, Any]):

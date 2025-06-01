@@ -457,7 +457,7 @@ class MCPServerRegistry:
             },
             "jetbrains": {
                 "name": "JetBrains IDEs Server",
-                "description": "Work on your code with JetBrains IDEs through AI assistance.",
+                "description": "Work on your Java, Kotlin, Python, and other code with JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm) through AI assistance.",
                 "category": "community",
                 "package": "jetbrains-mcp",
                 "install_method": "git",
