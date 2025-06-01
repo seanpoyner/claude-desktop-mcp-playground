@@ -36,12 +36,13 @@ Claude Desktop MCP Playground is a modular platform that allows you to:
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-org/claude-desktop-mcp-playground.git
+   git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git
    cd claude-desktop-mcp-playground
    ```
 
 2. Create a virtual environment
    ```bash
+   uv init
    uv venv # Or python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```

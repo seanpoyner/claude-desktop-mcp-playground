@@ -1,13 +1,13 @@
-# Basic Configuration for Claude Desktop MCP
+# Basic Configuration for Claude Desktop MCP Playground
 
 ## Configuration Overview
 
-The Claude Desktop MCP uses a flexible configuration system to customize your workflow and agent environments.
+The Claude Desktop MCP Playground uses a flexible configuration system to customize your workflow and agent environments.
 
 ## Configuration File Location
 
 Configurations are managed through:
-- Global configuration: `~/.claude-desktop-mcp/config.yaml`
+- Global configuration: `~/.claude-desktop-mcp-playground/config.yaml`
 - Project-specific: `./mcp-config.yaml`
 
 ## Core Configuration Sections

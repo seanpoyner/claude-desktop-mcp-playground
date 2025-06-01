@@ -1,4 +1,4 @@
-# Advanced Claude Desktop MCP Server Setup
+# Advanced Claude Desktop MCP Playground Server Setup
 
 ## Multi-Agent Architecture
 

@@ -1,4 +1,4 @@
-# Claude Desktop MCP Installation Guide
+# Claude Desktop MCP Playground Installation Guide
 
 ## Supported Platforms
 
@@ -12,30 +12,31 @@
 
 ```bash
 # Recommended for most users
-pip install claude-desktop-mcp
+pip install claude-desktop-mcp-playground
 
 # For development version
-pip install git+https://github.com/your-org/claude-desktop-mcp.git
+pip install git+https://github.com/seanpoyner/claude-desktop-mcp-playground.git
 ```
 
 ### 2. Local Development Setup
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-org/claude-desktop-mcp.git
-   cd claude-desktop-mcp
+   git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git
+   cd claude-desktop-mcp-playground
    ```
 
 2. Create virtual environment
    ```bash
-   python -m venv mcp-env
-   source mcp-env/bin/activate  # Activation varies by OS
+   uv init
+   uv venv # Or python -m venv .venv
+   source .venv/bin/activate  # Activation varies by OS
    ```
 
 3. Install dependencies
    ```bash
-   pip install -r requirements.txt
-   pip install -e .  # Install in editable mode
+   uv pip install -r requirements.txt
+   uv pip install -e .  # Install in editable mode
    ```
 
 ## Configuration Requirements
@@ -61,8 +62,8 @@ pip install git+https://github.com/your-org/claude-desktop-mcp.git
 
 Verify installation by running:
 ```bash
-claude-desktop-mcp --version
-claude-desktop-mcp doctor  # Checks system compatibility
+claude-desktop-mcp-playground --version
+claude-desktop-mcp-playground doctor  # Checks system compatibility
 ```
 
 ## Potential Installation Issues
