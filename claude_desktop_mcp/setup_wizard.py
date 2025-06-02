@@ -131,7 +131,7 @@ class DependencyChecker:
                 )
                 results[server] = result.returncode == 0
                 if result.returncode == 0:
-                    click.echo(f"✓ {server} installed successfully")
+                    click.echo(f"[SUCCESS] {server} installed successfully")
                 else:
                     click.echo(f"✗ Failed to install {server}: {result.stderr[:100]}")
             except subprocess.TimeoutExpired:
@@ -209,7 +209,7 @@ class SetupWizard:
     
     def welcome(self):
         """Display welcome message"""
-        click.echo("🎉 Welcome to Claude Desktop MCP Playground Setup!")
+        click.echo("Welcome to Claude Desktop MCP Playground Setup!")
         click.echo("=" * 50)
         click.echo()
         click.echo("This wizard will help you:")
@@ -220,14 +220,14 @@ class SetupWizard:
     
     def check_dependencies_interactive(self) -> bool:
         """Interactive dependency checking"""
-        click.echo("🔍 Checking dependencies...")
+        click.echo("[INFO] Checking dependencies...")
         click.echo()
         
         deps = self.checker.check_dependencies()
         all_good = True
         
         for name, info in deps.items():
-            status = "✓" if info["available"] else "✗"
+            status = "[OK]" if info["available"] else "[MISSING]"
             version_info = f"({info['version']})" if info["version"] != "not found" else ""
             click.echo(f"  {status} {name.title()} {version_info}")
             
@@ -238,13 +238,13 @@ class SetupWizard:
                 click.echo()
         
         if not all_good:
-            click.echo("❌ Some dependencies are missing!")
+            click.echo("[ERROR] Some dependencies are missing!")
             click.echo()
             if click.confirm("Would you like to see installation instructions?"):
                 self.show_install_instructions(deps)
             return False
         else:
-            click.echo("✅ All dependencies are available!")
+            click.echo("[SUCCESS] All dependencies are available!")
             return True
     
     def show_install_instructions(self, deps: Dict):
@@ -376,7 +376,7 @@ class SetupWizard:
         click.echo(f"\n📊 Installation summary: {success_count}/{total_count} packages installed successfully")
         
         if success_count < total_count:
-            click.echo("⚠️  Some packages failed to install. You can install them manually later.")
+            click.echo("[WARNING] Some packages failed to install. You can install them manually later.")
         
         return success_count > 0
     
@@ -390,14 +390,14 @@ class SetupWizard:
         
         # Save simplified configuration
         save_simplified_config(servers, "claude_desktop_simplified.json")
-        click.echo("✓ Saved simplified configuration to claude_desktop_simplified.json")
+        click.echo("[SUCCESS] Saved simplified configuration to claude_desktop_simplified.json")
         
         # Apply to Claude Desktop
         claude_config = self.config_manager.export_from_simplified(servers)
         self.config_manager.save_config(claude_config)
-        click.echo("✓ Applied configuration to Claude Desktop")
+        click.echo("[SUCCESS] Applied configuration to Claude Desktop")
         
-        click.echo("\n🎊 Setup complete!")
+        click.echo("\n[SUCCESS] Setup complete!")
         click.echo("\nNext steps:")
         click.echo("  1. Restart Claude Desktop to load the new configuration")
         click.echo("  2. Try using the new MCP servers in your conversations")
@@ -556,7 +556,7 @@ def setup(quick: bool, deps_only: bool):
         return
     
     if quick:
-        click.echo("🚀 Quick setup mode...")
+        click.echo("[INFO] Quick setup mode...")
         deps_ok = wizard.check_dependencies_interactive()
         if deps_ok:
             wizard.install_servers()

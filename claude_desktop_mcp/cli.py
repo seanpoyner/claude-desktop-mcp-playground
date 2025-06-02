@@ -82,7 +82,7 @@ def import_config(output: str, output_format: str):
         if output_format == 'simplified':
             simplified = manager.import_to_simplified()
             save_simplified_config(simplified, output)
-            click.echo(f"✓ Imported {len(simplified)} MCP servers to {output}")
+            click.echo(f"[SUCCESS] Imported {len(simplified)} MCP servers to {output}")
             
             if simplified:
                 click.echo("\nConfigured servers:")
@@ -93,7 +93,7 @@ def import_config(output: str, output_format: str):
             original = manager.load_config()
             with open(output.replace('.json', '_original.json'), 'w') as f:
                 json.dump(original, f, indent=2)
-            click.echo(f"✓ Exported original configuration to {output.replace('.json', '_original.json')}")
+            click.echo(f"[SUCCESS] Exported original configuration to {output.replace('.json', '_original.json')}")
             
     except Exception as e:
         click.echo(f"✗ Error importing configuration: {e}", err=True)
@@ -165,7 +165,7 @@ def add(name: str, command: str, args: tuple, env: tuple):
                 return
         
         manager.add_server(name, command, list(args), env_dict)
-        click.echo(f"✓ Added MCP server '{name}'")
+        click.echo(f"[SUCCESS] Added MCP server '{name}'")
         
     except Exception as e:
         click.echo(f"✗ Error adding server: {e}", err=True)
@@ -190,7 +190,7 @@ def remove(name: str, confirm: bool):
             return
         
         if manager.remove_server(name):
-            click.echo(f"✓ Removed MCP server '{name}'")
+            click.echo(f"[SUCCESS] Removed MCP server '{name}'")
         else:
             click.echo(f"✗ Failed to remove server '{name}'")
             
@@ -208,7 +208,7 @@ def validate():
         result = manager.validate_config()
         
         if result["valid"]:
-            click.echo("✓ Configuration is valid")
+            click.echo("[SUCCESS] Configuration is valid")
         else:
             click.echo("✗ Configuration has errors:")
             for error in result["errors"]:
@@ -254,7 +254,7 @@ def apply(input_file: str):
             return
         
         manager.save_config(claude_config)
-        click.echo("✓ Configuration applied successfully")
+        click.echo("[SUCCESS] Configuration applied successfully")
         click.echo("Restart Claude Desktop for changes to take effect.")
         
     except Exception as e:
@@ -603,11 +603,11 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
                     timeout=120
                 )
                 if result.returncode == 0:
-                    click.echo("✅ npm package installed successfully")
+                    click.echo("[SUCCESS] npm package installed successfully")
                 else:
-                    click.echo(f"⚠️  npm install warning: {result.stderr[:100]}")
+                    click.echo(f"[WARNING] npm install warning: {result.stderr[:100]}")
             except Exception as e:
-                click.echo(f"⚠️  Failed to install npm package: {e}")
+                click.echo(f"[WARNING] Failed to install npm package: {e}")
                 click.echo("You may need to install it manually")
         
         # Check if server already exists
@@ -625,7 +625,7 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
             install_config['env']
         )
         
-        click.echo(f"✅ Successfully installed '{instance_name}'")
+        click.echo(f"[SUCCESS] Successfully installed '{instance_name}'")
         click.echo("🔄 Restart Claude Desktop for changes to take effect")
         
         # Show usage example
