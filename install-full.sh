@@ -151,34 +151,78 @@ check_node_version() {
     fi
 }
 
+clone_repository() {
+    log_info "Cloning Claude Desktop MCP Playground repository..."
+    
+    INSTALL_DIR="$HOME/claude-desktop-mcp-playground"
+    
+    # Remove existing directory if it exists
+    if [ -d "$INSTALL_DIR" ]; then
+        log_info "Removing existing installation directory..."
+        rm -rf "$INSTALL_DIR"
+    fi
+    
+    if git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git "$INSTALL_DIR"; then
+        log_success "Repository cloned to $INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        log_info "Changed to project directory: $INSTALL_DIR"
+        echo "$INSTALL_DIR"
+    else
+        log_error "Failed to clone repository"
+        log_error "Please ensure Git is installed and you have internet access"
+        return 1
+    fi
+}
+
 install_mcp_servers() {
     log_info "Installing common MCP servers..."
     
-    # List of MCP servers to install
+    # Fixed server list with correct package names
     MCP_SERVERS=(
         "@modelcontextprotocol/server-filesystem"
-        "@modelcontextprotocol/server-sqlite"
+        "mcp-server-sqlite-npx"
         "@modelcontextprotocol/server-brave-search"
+        "@modelcontextprotocol/server-everything"
     )
+    
+    SUCCESS_COUNT=0
+    TOTAL_COUNT=${#MCP_SERVERS[@]}
     
     for server in "${MCP_SERVERS[@]}"; do
         log_info "Installing $server..."
-        if npm install -g "$server"; then
+        if npm install -g "$server" 2>/dev/null; then
             log_success "$server installed"
+            ((SUCCESS_COUNT++))
         else
             log_warning "Failed to install $server"
         fi
     done
+    
+    log_info "Installation summary: $SUCCESS_COUNT/$TOTAL_COUNT packages installed successfully"
 }
 
 setup_playground() {
+    local project_dir="$1"
+    
     log_info "Setting up Claude Desktop MCP Playground..."
     
+    # Ensure we're in the project directory
+    if [ ! -f "pyproject.toml" ]; then
+        log_error "Not in project directory. pyproject.toml not found."
+        log_error "Current location: $(pwd)"
+        return 1
+    fi
+    
     # Create virtual environment
+    log_info "Creating virtual environment..."
     python3 -m venv .venv
+    
+    # Activate virtual environment
+    log_info "Activating virtual environment..."
     source .venv/bin/activate
     
     # Install with uv if available, otherwise pip
+    log_info "Installing Claude Desktop MCP Playground..."
     if check_command "uv"; then
         uv pip install -e .
     else
@@ -188,14 +232,15 @@ setup_playground() {
     log_success "Claude Desktop MCP Playground installed"
     
     # Add pg command to PATH
-    setup_pg_command
+    setup_pg_command "$project_dir"
     
     # Run setup wizard
     log_info "Running setup wizard..."
-    pg setup --quick
+    ./.venv/bin/python -m claude_desktop_mcp.cli setup --quick
 }
 
 setup_pg_command() {
+    local project_dir="$1"
     log_info "Setting up 'pg' command..."
     
     INSTALL_DIR="$HOME/.local/bin"
@@ -204,38 +249,34 @@ setup_pg_command() {
     # Create .local/bin directory if it doesn't exist
     mkdir -p "$INSTALL_DIR"
     
-    # Create the pg script
-    cat > "$PG_SCRIPT" << 'EOF'
-#!/usr/bin/env python3
-"""Playground CLI wrapper script"""
+    # Create the pg script that uses the virtual environment Python
+    cat > "$PG_SCRIPT" << EOF
+#!/bin/bash
+# Claude Desktop MCP Playground CLI wrapper
+
+PROJECT_DIR="$project_dir"
+VENV_PYTHON="\$PROJECT_DIR/.venv/bin/python"
+
+if [ ! -f "\$VENV_PYTHON" ]; then
+    echo "ERROR: Virtual environment Python not found at: \$VENV_PYTHON"
+    echo "Please ensure the virtual environment is set up correctly."
+    exit 1
+fi
+
+# Run the CLI using the virtual environment Python
+"\$VENV_PYTHON" -c "
 import sys
-import os
 from pathlib import Path
-
-# Add the project directory to Python path
-project_dir = Path(__file__).parent.parent / "claude-desktop-mcp-playground"
-if project_dir.exists():
-    sys.path.insert(0, str(project_dir))
-
-    # Import and run the CLI
-    try:
-        from claude_desktop_mcp.cli import main
-        main()
-    except ImportError:
-        print("Error: Claude Desktop MCP Playground not found. Please run installation again.")
-        sys.exit(1)
-else:
-    # Try to use the current directory if we're in the project
-    current_dir = Path.cwd()
-    if (current_dir / "claude_desktop_mcp").exists():
-        sys.path.insert(0, str(current_dir))
-        from claude_desktop_mcp.cli import main
-        main()
-    else:
-        print("Error: Could not find Claude Desktop MCP Playground installation.")
-        print(f"Expected at: {project_dir}")
-        print(f"Current dir: {current_dir}")
-        sys.exit(1)
+sys.path.insert(0, r'$project_dir')
+try:
+    from claude_desktop_mcp.cli import main
+    main()
+except ImportError as e:
+    print('Error: Claude Desktop MCP Playground not found.')
+    print(f'Import error: {e}')
+    print('Please run installation again.')
+    sys.exit(1)
+"
 EOF
     
     # Make it executable
@@ -321,6 +362,28 @@ main() {
         fi
     fi
     
+    # Check Git (needed for cloning)
+    if ! check_command "git"; then
+        log_warning "Git not found. Installing..."
+        if [ "$PLATFORM" = "Linux" ]; then
+            if check_command "apt"; then
+                sudo apt update && sudo apt install -y git
+            elif check_command "dnf"; then
+                sudo dnf install -y git
+            fi
+        else
+            # macOS
+            if check_command "brew"; then
+                brew install git
+            else
+                log_error "Please install Git manually or install Homebrew first"
+                exit 1
+            fi
+        fi
+    else
+        log_success "Git found"
+    fi
+    
     # Check uv
     if ! check_command "uv"; then
         install_uv
@@ -328,11 +391,18 @@ main() {
         log_success "uv found"
     fi
     
+    # Clone the repository
+    project_dir=$(clone_repository)
+    if [ $? -ne 0 ]; then
+        log_error "Failed to clone repository. Installation aborted."
+        exit 1
+    fi
+    
     # Install MCP servers
     install_mcp_servers
     
     # Setup playground
-    setup_playground
+    setup_playground "$project_dir"
     
     echo
     log_success "Installation complete! 🎊"

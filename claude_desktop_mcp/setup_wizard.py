@@ -113,7 +113,7 @@ class DependencyChecker:
         """Install common MCP servers via npm"""
         servers = {
             "@modelcontextprotocol/server-filesystem": "File system operations",
-            "@modelcontextprotocol/server-sqlite": "SQLite database access",
+            "mcp-server-sqlite-npx": "SQLite database access",
             "@modelcontextprotocol/server-brave-search": "Brave search integration",
             "@modelcontextprotocol/server-everything": "Everything search (Windows)"
         }
@@ -164,7 +164,7 @@ class MCPServerPresets:
                 "name": "SQLite Database Server",
                 "description": "Query and manage SQLite databases",
                 "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-sqlite"],
+                "args": ["-y", "mcp-server-sqlite-npx"],
                 "env": {},
                 "requires": ["node"],
                 "setup_args": ["database_path"]

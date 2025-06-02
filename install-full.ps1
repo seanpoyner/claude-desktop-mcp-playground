@@ -124,6 +124,28 @@ function Install-Python {
     return $false
 }
 
+function Install-Git {
+    Write-Log "Installing Git..."
+    
+    if (Test-Command "winget") {
+        try {
+            winget install Git.Git --accept-source-agreements --accept-package-agreements
+            Write-Success "Git installed via winget"
+            
+            # Refresh PATH
+            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+            
+            return $true
+        }
+        catch {
+            Write-Warning "winget installation failed"
+        }
+    }
+    
+    Write-Log "Please install Git manually from https://git-scm.com/"
+    return $false
+}
+
 function Install-UV {
     Write-Log "Installing uv (Python package manager)..."
     try {
@@ -196,61 +218,149 @@ function Test-NodeVersion {
     }
 }
 
+function Clone-Repository {
+    Write-Log "Cloning Claude Desktop MCP Playground repository..."
+    
+    $installDir = "$env:USERPROFILE\claude-desktop-mcp-playground"
+    
+    # Remove existing directory if it exists
+    if (Test-Path $installDir) {
+        Write-Log "Removing existing installation directory..."
+        Remove-Item -Path $installDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    
+    try {
+        git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git $installDir
+        Write-Success "Repository cloned to $installDir"
+        
+        # Change to project directory
+        Set-Location $installDir
+        Write-Log "Changed to project directory: $installDir"
+        
+        return $installDir
+    }
+    catch {
+        Write-Error "Failed to clone repository: $($_.Exception.Message)"
+        Write-Error "Please ensure Git is installed and you have internet access"
+        return $null
+    }
+}
+
 function Install-MCPServers {
     Write-Log "Installing common MCP servers..."
     
+    # Fixed server list with correct package names
     $mcpServers = @(
         "@modelcontextprotocol/server-filesystem",
-        "@modelcontextprotocol/server-sqlite",
+        "mcp-server-sqlite-npx",
         "@modelcontextprotocol/server-brave-search",
         "@modelcontextprotocol/server-everything"
     )
     
+    $successCount = 0
+    $totalCount = $mcpServers.Count
+    
     foreach ($server in $mcpServers) {
         Write-Log "Installing $server..."
         try {
-            npm install -g $server
-            Write-Success "$server installed"
+            $result = npm install -g $server 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "$server installed"
+                $successCount++
+            }
+            else {
+                Write-Warning "Failed to install $server (exit code: $LASTEXITCODE)"
+                Write-Log "Output: $result"
+            }
         }
         catch {
-            Write-Warning "Failed to install $server"
+            Write-Warning "Failed to install $server: $($_.Exception.Message)"
         }
     }
+    
+    Write-Log "Installation summary: $successCount/$totalCount packages installed successfully"
+    return $successCount -gt 0
 }
 
 function Setup-Playground {
+    param([string]$ProjectDir)
+    
     Write-Log "Setting up Claude Desktop MCP Playground..."
     
-    # Create virtual environment
-    python -m venv .venv
+    # Ensure we're in the project directory
+    if (-not (Test-Path "pyproject.toml")) {
+        Write-Error "Not in project directory. pyproject.toml not found."
+        Write-Error "Current location: $(Get-Location)"
+        return $false
+    }
+    
+    # Create virtual environment in project directory
+    Write-Log "Creating virtual environment..."
+    try {
+        python -m venv .venv
+        Write-Success "Virtual environment created"
+    }
+    catch {
+        Write-Error "Failed to create virtual environment: $($_.Exception.Message)"
+        return $false
+    }
     
     # Activate virtual environment
-    & ".\.venv\Scripts\Activate.ps1"
-    
-    # Install with uv if available, otherwise pip
-    if (Test-Command "uv") {
-        uv pip install -e .
-    }
-    else {
-        pip install -e .
+    Write-Log "Activating virtual environment..."
+    $venvActivate = ".\.venv\Scripts\Activate.ps1"
+    if (-not (Test-Path $venvActivate)) {
+        Write-Error "Virtual environment activation script not found at: $venvActivate"
+        return $false
     }
     
-    Write-Success "Claude Desktop MCP Playground installed"
+    try {
+        & $venvActivate
+        Write-Success "Virtual environment activated"
+    }
+    catch {
+        Write-Warning "Failed to activate virtual environment: $($_.Exception.Message)"
+    }
+    
+    # Install the package
+    Write-Log "Installing Claude Desktop MCP Playground..."
+    try {
+        if (Test-Command "uv") {
+            uv pip install -e .
+        }
+        else {
+            .\.venv\Scripts\python.exe -m pip install -e .
+        }
+        Write-Success "Claude Desktop MCP Playground installed"
+    }
+    catch {
+        Write-Error "Failed to install package: $($_.Exception.Message)"
+        return $false
+    }
     
     # Add pg command to PATH
-    Setup-PGCommand
+    Setup-PGCommand -ProjectDir $ProjectDir
     
     # Run setup wizard
     Write-Log "Running setup wizard..."
-    if ($Quick) {
-        pg setup --quick
+    try {
+        if ($Quick) {
+            .\.venv\Scripts\python.exe -m claude_desktop_mcp.cli setup --quick
+        }
+        else {
+            .\.venv\Scripts\python.exe -m claude_desktop_mcp.cli setup
+        }
     }
-    else {
-        pg setup
+    catch {
+        Write-Warning "Setup wizard failed: $($_.Exception.Message)"
+        Write-Log "You can run 'pg setup' manually later"
     }
+    
+    return $true
 }
 
 function Setup-PGCommand {
+    param([string]$ProjectDir)
+    
     Write-Log "Setting up 'pg' command..."
     
     # Create Scripts directory in user profile
@@ -262,21 +372,26 @@ function Setup-PGCommand {
         New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
     }
     
-    # Get current directory for project path
-    $projectDir = (Get-Location).Path
-    
-    # Create the pg.cmd script
+    # Create the pg.cmd script that uses the virtual environment Python
+    $venvPython = "$ProjectDir\.venv\Scripts\python.exe"
     $scriptContent = @"
 @echo off
-python -c "
+if not exist "$venvPython" (
+    echo ERROR: Virtual environment Python not found at: $venvPython
+    echo Please ensure the virtual environment is set up correctly.
+    exit /b 1
+)
+"$venvPython" -c "
 import sys
 from pathlib import Path
-sys.path.insert(0, r'$projectDir')
+sys.path.insert(0, r'$ProjectDir')
 try:
     from claude_desktop_mcp.cli import main
     main()
-except ImportError:
-    print('Error: Claude Desktop MCP Playground not found. Please run installation again.')
+except ImportError as e:
+    print('Error: Claude Desktop MCP Playground not found.')
+    print(f'Import error: {e}')
+    print('Please run installation again.')
     sys.exit(1)
 "
 "@
@@ -336,6 +451,18 @@ function Main {
             Install-Winget
         }
         
+        # Check Git first (needed for cloning)
+        if (-not (Test-Command "git")) {
+            if (-not (Install-Git)) {
+                Write-Error "Git is required but could not be installed automatically."
+                Write-Error "Please install Git manually and run this script again."
+                exit 1
+            }
+        }
+        else {
+            Write-Success "Git found"
+        }
+        
         # Check Python
         if (-not (Test-PythonVersion)) {
             Install-Python
@@ -353,13 +480,26 @@ function Main {
         else {
             Write-Success "uv found"
         }
-        
-        # Install MCP servers
+    }
+    
+    # Clone the repository
+    $projectDir = Clone-Repository
+    if (-not $projectDir) {
+        Write-Error "Failed to clone repository. Installation aborted."
+        exit 1
+    }
+    
+    # Install MCP servers
+    if (-not $SkipDeps) {
         Install-MCPServers
     }
     
     # Setup playground
-    Setup-Playground
+    $setupSuccess = Setup-Playground -ProjectDir $projectDir
+    if (-not $setupSuccess) {
+        Write-Error "Setup failed. Please check the errors above."
+        exit 1
+    }
     
     Write-Host ""
     Write-Success "Installation complete! 🎊"
