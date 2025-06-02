@@ -1,0 +1,13 @@
+{
+  "python-example": {
+    "command": "python",
+    "args": [
+      "-m",
+      "claude_desktop_mcp.example_server"
+    ],
+    "env": {
+      "LOG_LEVEL": "INFO"
+    },
+    "enabled": true
+  }
+}

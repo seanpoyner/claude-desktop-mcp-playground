@@ -5,17 +5,88 @@ installation assistance, and MCP server configuration.
 """
 
 import json
+import logging
 import os
 import platform
 import shutil
 import subprocess
 import sys
+import time
+import signal
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import click
 
 from .config_manager import ClaudeDesktopConfigManager, save_simplified_config
+
+
+def setup_logging(log_level=logging.INFO):
+    """Setup logging for the setup wizard"""
+    log_dir = Path.home() / ".claude-mcp-logs"
+    log_dir.mkdir(exist_ok=True)
+    
+    log_file = log_dir / f"setup-{int(time.time())}.log"
+    
+    # Create formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+    
+    # Setup logger
+    logger = logging.getLogger('claude_mcp_setup')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    # Log file location
+    click.echo(f"[INFO] Logging to: {log_file}")
+    logger.info(f"Setup wizard started. Log file: {log_file}")
+    logger.info(f"Platform: {platform.system()} {platform.release()}")
+    logger.info(f"Python: {sys.version}")
+    
+    return logger
+
+
+def timeout_handler(signum, frame):
+    """Handle timeout for prompts"""
+    raise TimeoutError("Operation timed out")
+
+
+def safe_prompt(prompt_func, timeout_seconds=30, *args, **kwargs):
+    """Wrapper for prompts with timeout (Unix only)"""
+    if platform.system() == "Windows":
+        # Windows doesn't support signal-based timeouts
+        return prompt_func(*args, **kwargs)
+    
+    # Set up timeout
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout_seconds)
+    
+    try:
+        result = prompt_func(*args, **kwargs)
+        signal.alarm(0)  # Cancel timeout
+        return result
+    except TimeoutError:
+        signal.alarm(0)  # Cancel timeout
+        click.echo(f"\n[WARNING] Prompt timed out after {timeout_seconds} seconds, using default")
+        # Return default if available
+        if 'default' in kwargs:
+            return kwargs['default']
+        return None
+    finally:
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 class DependencyChecker:
@@ -111,6 +182,7 @@ class DependencyChecker:
     
     def install_mcp_servers(self) -> Dict[str, bool]:
         """Install common MCP servers via npm"""
+        logger = logging.getLogger('claude_mcp_setup')
         servers = {
             "@modelcontextprotocol/server-filesystem": "File system operations",
             "mcp-server-sqlite-npx": "SQLite database access",
@@ -118,27 +190,39 @@ class DependencyChecker:
             "@modelcontextprotocol/server-everything": "Everything search (Windows)"
         }
         
+        logger.info(f"Installing {len(servers)} MCP servers")
         results = {}
         
         for server, description in servers.items():
             try:
-                click.echo(f"Installing {server} ({description})...")
+                click.echo(f"[INFO] Installing {server} ({description})...")
+                logger.info(f"Installing {server}")
+                
                 result = subprocess.run(
                     ["npm", "install", "-g", server],
                     capture_output=True,
                     text=True,
                     timeout=120
                 )
+                
                 results[server] = result.returncode == 0
+                
                 if result.returncode == 0:
                     click.echo(f"[SUCCESS] {server} installed successfully")
+                    logger.info(f"Successfully installed {server}")
                 else:
-                    click.echo(f"✗ Failed to install {server}: {result.stderr[:100]}")
+                    click.echo(f"[ERROR] Failed to install {server}: {result.stderr[:100]}")
+                    logger.error(f"Failed to install {server}. Return code: {result.returncode}")
+                    logger.error(f"STDERR: {result.stderr}")
+                    logger.error(f"STDOUT: {result.stdout}")
+                    
             except subprocess.TimeoutExpired:
-                click.echo(f"✗ Timeout installing {server}")
+                click.echo(f"[ERROR] Timeout installing {server} (120s)")
+                logger.error(f"Timeout installing {server} after 120 seconds")
                 results[server] = False
             except Exception as e:
-                click.echo(f"✗ Error installing {server}: {e}")
+                click.echo(f"[ERROR] Error installing {server}: {e}")
+                logger.error(f"Exception installing {server}: {e}")
                 results[server] = False
         
         return results
@@ -206,6 +290,7 @@ class SetupWizard:
         self.checker = DependencyChecker()
         self.config_manager = ClaudeDesktopConfigManager()
         self.presets = MCPServerPresets()
+        self.logger = logging.getLogger('claude_mcp_setup')
     
     def welcome(self):
         """Display welcome message"""
@@ -221,10 +306,18 @@ class SetupWizard:
     def check_dependencies_interactive(self) -> bool:
         """Interactive dependency checking"""
         click.echo("[INFO] Checking dependencies...")
+        self.logger.info("Starting dependency check")
         click.echo()
         
-        deps = self.checker.check_dependencies()
+        try:
+            deps = self.checker.check_dependencies()
+            self.logger.info(f"Dependency check completed: {deps}")
+        except Exception as e:
+            self.logger.error(f"Error during dependency check: {e}")
+            click.echo(f"[ERROR] Dependency check failed: {e}")
+            return False
         all_good = True
+        self.logger.info("Processing dependency results...")
         
         for name, info in deps.items():
             status = "[OK]" if info["available"] else "[MISSING]"
@@ -238,12 +331,14 @@ class SetupWizard:
                 click.echo()
         
         if not all_good:
+            self.logger.info("Some dependencies missing, asking for install instructions")
             click.echo("[ERROR] Some dependencies are missing!")
             click.echo()
             if click.confirm("Would you like to see installation instructions?"):
                 self.show_install_instructions(deps)
             return False
         else:
+            self.logger.info("All dependencies satisfied")
             click.echo("[SUCCESS] All dependencies are available!")
             return True
     
@@ -364,11 +459,59 @@ class SetupWizard:
     
     def install_servers(self) -> bool:
         """Install MCP server packages"""
-        if not click.confirm("Install common MCP server packages via npm?", default=True):
-            return True
+        self.logger.info("Starting MCP server installation process")
         
-        click.echo("📦 Installing MCP server packages...")
-        results = self.checker.install_mcp_servers()
+        try:
+            # Simple confirmation prompt with fallback
+            self.logger.info("About to show confirmation prompt")
+            
+            # Check if we're in an interactive environment
+            import sys
+            if not sys.stdin.isatty():
+                self.logger.info("Non-interactive environment detected, defaulting to yes")
+                response = True
+            else:
+                try:
+                    import select
+                    import time
+                    
+                    click.echo("Install common MCP server packages via npm? [Y/n]: ", nl=False)
+                    
+                    # Try to read input with timeout (Unix only)
+                    if hasattr(select, 'select'):
+                        ready, _, _ = select.select([sys.stdin], [], [], 10.0)
+                        if ready:
+                            user_input = sys.stdin.readline().strip().lower()
+                            response = user_input in ['', 'y', 'yes']
+                            self.logger.info(f"User input: '{user_input}', interpreted as: {response}")
+                        else:
+                            self.logger.info("Prompt timeout (10s), defaulting to yes")
+                            response = True
+                    else:
+                        # Windows fallback - just use input() 
+                        user_input = input().strip().lower()
+                        response = user_input in ['', 'y', 'yes']
+                        self.logger.info(f"User input: '{user_input}', interpreted as: {response}")
+                        
+                except (EOFError, KeyboardInterrupt, OSError):
+                    self.logger.info("Prompt interrupted or failed, defaulting to yes")
+                    response = True
+            
+            if not response:
+                self.logger.info("User declined MCP server installation")
+                return True
+            
+            click.echo("[INFO] Installing MCP server packages...")
+            self.logger.info("Installing MCP server packages")
+            results = self.checker.install_mcp_servers()
+        except KeyboardInterrupt:
+            self.logger.warning("Installation interrupted by user")
+            click.echo("\n[WARNING] Installation interrupted")
+            return False
+        except Exception as e:
+            self.logger.error(f"Error during server installation: {e}")
+            click.echo(f"[ERROR] Installation failed: {e}")
+            return False
         
         success_count = sum(results.values())
         total_count = len(results)
@@ -406,15 +549,22 @@ class SetupWizard:
         
     def run_full_setup(self):
         """Run the complete setup wizard"""
+        self.logger.info("Starting welcome screen")
         self.welcome()
+        self.logger.info("Welcome screen completed")
         
         # Check dependencies
+        self.logger.info("Starting dependency check")
         deps_ok = self.check_dependencies_interactive()
+        self.logger.info(f"Dependency check completed: {deps_ok}")
         if not deps_ok:
+            self.logger.warning("Dependencies not satisfied, exiting setup")
             return
         
         # Install MCP server packages
+        self.logger.info("About to call install_servers method")
         self.install_servers()
+        self.logger.info("install_servers method completed")
         
         # Configure servers
         servers = self.setup_mcp_servers()
@@ -546,10 +696,20 @@ if __name__ == "__main__":
 def setup(quick: bool, deps_only: bool):
     """Interactive setup wizard for Claude Desktop MCP Playground"""
     
+    # Setup logging first
+    logger = setup_logging()
+    logger.info(f"Setup wizard called with quick={quick}, deps_only={deps_only}")
+    
     # Create example server
     create_example_server()
     
-    wizard = SetupWizard()
+    try:
+        wizard = SetupWizard()
+        logger.info("SetupWizard initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize SetupWizard: {e}")
+        click.echo(f"[ERROR] Setup initialization failed: {e}")
+        return
     
     if deps_only:
         wizard.check_dependencies_interactive()
@@ -557,21 +717,44 @@ def setup(quick: bool, deps_only: bool):
     
     if quick:
         click.echo("[INFO] Quick setup mode...")
-        deps_ok = wizard.check_dependencies_interactive()
-        if deps_ok:
-            wizard.install_servers()
-            # Apply minimal configuration
-            basic_servers = {
-                "filesystem": {
-                    "command": "npx",
-                    "args": ["-y", "@modelcontextprotocol/server-filesystem", str(Path.home() / "workspace")],
-                    "env": {},
-                    "enabled": True
-                }
-            }
-            wizard.apply_configuration(basic_servers)
+        logger.info("Starting quick setup mode")
+        
+        try:
+            deps_ok = wizard.check_dependencies_interactive()
+            logger.info(f"Dependency check result: {deps_ok}")
+            
+            if deps_ok:
+                logger.info("Dependencies OK, installing servers")
+                install_success = wizard.install_servers()
+                logger.info(f"Server installation result: {install_success}")
+                
+                if install_success:
+                    # Apply minimal configuration
+                    basic_servers = {
+                        "filesystem": {
+                            "command": "npx",
+                            "args": ["-y", "@modelcontextprotocol/server-filesystem", str(Path.home() / "workspace")],
+                            "env": {},
+                            "enabled": True
+                        }
+                    }
+                    logger.info("Applying basic configuration")
+                    wizard.apply_configuration(basic_servers)
+                    logger.info("Quick setup completed successfully")
+            else:
+                logger.warning("Dependencies not satisfied, skipping server installation")
+                
+        except Exception as e:
+            logger.error(f"Error during quick setup: {e}")
+            click.echo(f"[ERROR] Quick setup failed: {e}")
     else:
-        wizard.run_full_setup()
+        logger.info("Starting full setup mode")
+        try:
+            wizard.run_full_setup()
+            logger.info("Full setup completed")
+        except Exception as e:
+            logger.error(f"Error during full setup: {e}")
+            click.echo(f"[ERROR] Full setup failed: {e}")
 
 
 if __name__ == "__main__":
