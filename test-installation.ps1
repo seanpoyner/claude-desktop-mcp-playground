@@ -61,7 +61,7 @@ try {
     }
 }
 catch {
-    Write-Fail "pg command failed to execute: $($_.Exception.Message)"
+    Write-Fail "pg command failed to execute - $($_.Exception.Message)"
 }
 
 Write-Host ""
@@ -172,7 +172,7 @@ try {
     }
 }
 catch {
-    Write-Fail "pg config search failed: $($_.Exception.Message)"
+    Write-Fail "pg config search failed - $($_.Exception.Message)"
 }
 
 try {

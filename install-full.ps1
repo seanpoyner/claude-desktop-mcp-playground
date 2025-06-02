@@ -240,7 +240,7 @@ function Clone-Repository {
         return $installDir
     }
     catch {
-        Write-Error "Failed to clone repository: $($_.Exception.Message)"
+        Write-Error "Failed to clone repository - $($_.Exception.Message)"
         Write-Error "Please ensure Git is installed and you have internet access"
         return $null
     }
@@ -274,7 +274,7 @@ function Install-MCPServers {
             }
         }
         catch {
-            Write-Warning "Failed to install $server: $($_.Exception.Message)"
+            Write-Warning "Failed to install $server - $($_.Exception.Message)"
         }
     }
     
@@ -301,7 +301,7 @@ function Setup-Playground {
         Write-Success "Virtual environment created"
     }
     catch {
-        Write-Error "Failed to create virtual environment: $($_.Exception.Message)"
+        Write-Error "Failed to create virtual environment - $($_.Exception.Message)"
         return $false
     }
     
@@ -318,7 +318,7 @@ function Setup-Playground {
         Write-Success "Virtual environment activated"
     }
     catch {
-        Write-Warning "Failed to activate virtual environment: $($_.Exception.Message)"
+        Write-Warning "Failed to activate virtual environment - $($_.Exception.Message)"
     }
     
     # Install the package
@@ -333,7 +333,7 @@ function Setup-Playground {
         Write-Success "Claude Desktop MCP Playground installed"
     }
     catch {
-        Write-Error "Failed to install package: $($_.Exception.Message)"
+        Write-Error "Failed to install package - $($_.Exception.Message)"
         return $false
     }
     
@@ -351,7 +351,7 @@ function Setup-Playground {
         }
     }
     catch {
-        Write-Warning "Setup wizard failed: $($_.Exception.Message)"
+        Write-Warning "Setup wizard failed - $($_.Exception.Message)"
         Write-Log "You can run 'pg setup' manually later"
     }
     
