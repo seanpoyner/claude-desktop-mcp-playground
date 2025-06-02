@@ -261,20 +261,20 @@ function Install-MCPServers {
     $totalCount = $mcpServers.Count
     
     foreach ($server in $mcpServers) {
-        Write-Log "Installing $server..."
+        Write-Log "Installing ${server}..."
         try {
-            $result = npm install -g $server 2>&1
+            $result = npm install -g ${server} 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Write-Success "$server installed"
+                Write-Success "${server} installed"
                 $successCount++
             }
             else {
-                Write-Warning "Failed to install $server (exit code: $LASTEXITCODE)"
+                Write-Warning "Failed to install ${server} (exit code: $LASTEXITCODE)"
                 Write-Log "Output: $result"
             }
         }
         catch {
-            Write-Warning "Failed to install $server - $($_.Exception.Message)"
+            Write-Warning "Failed to install ${server} - $($_.Exception.Message)"
         }
     }
     
