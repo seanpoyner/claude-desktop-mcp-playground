@@ -329,14 +329,18 @@ class MCPServerRegistry:
                 "name": "Microsoft Azure Server",
                 "description": "Access key Azure services and tools like Azure Storage, Cosmos DB, the Azure CLI, and more.",
                 "category": "community",
-                "package": "azure-mcp",
-                "install_method": "git",
-                "command": "git",
-                "args_template": ["clone", "https://github.com/Azure/azure-mcp"],
+                "package": "@azure/mcp",
+                "install_method": "npm",
+                "command": "npx",
+                "args_template": ["-y", "@azure/mcp@latest", "server", "start"],
                 "required_args": [],
                 "optional_args": [],
-                "env_vars": {"AZURE_SUBSCRIPTION_ID": "Azure subscription ID"},
-                "setup_help": "Clone repository and configure Azure credentials",
+                "env_vars": {
+                    "AZURE_TENANT_ID": "Your Azure tenant ID",
+                    "AZURE_CLIENT_ID": "Your Azure client ID", 
+                    "AZURE_CLIENT_SECRET": "Your Azure client secret"
+                },
+                "setup_help": "Configure Azure credentials via environment variables or use Azure CLI authentication",
                 "example_usage": "Manage Azure resources and services",
                 "homepage": "https://github.com/Azure/azure-mcp"
             },
@@ -621,6 +625,21 @@ class MCPServerRegistry:
                         ]
                     }
                 }
+            },
+            "office-powerpoint": {
+                "name": "Office PowerPoint Server",
+                "description": "PowerPoint manipulation using python-pptx. Create, edit, and manipulate PowerPoint presentations through MCP protocol.",
+                "category": "community",
+                "package": "office-powerpoint-mcp-server",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["--from", "office-powerpoint-mcp-server", "ppt_mcp_server.exe"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires uvx (pip install uvx) for Python package management. Installs and runs the server from PyPI.",
+                "example_usage": "Create presentations, add slides, insert charts, tables, images, and text",
+                "homepage": "https://github.com/GongRzhe/Office-PowerPoint-MCP-Server"
             }
         }
     
