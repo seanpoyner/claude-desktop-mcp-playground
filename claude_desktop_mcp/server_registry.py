@@ -640,6 +640,21 @@ class MCPServerRegistry:
                 "setup_help": "Requires uvx (pip install uvx) for Python package management. Installs and runs the server from PyPI.",
                 "example_usage": "Create presentations, add slides, insert charts, tables, images, and text",
                 "homepage": "https://github.com/GongRzhe/Office-PowerPoint-MCP-Server"
+            },
+            "office-word": {
+                "name": "Office Word Server",
+                "description": "Microsoft Word document manipulation using python-docx. Create, read, and edit Word documents with rich formatting capabilities.",
+                "category": "community",
+                "package": "office-word-mcp-server",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["--from", "office-word-mcp-server", "word_mcp_server"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires uvx (pip install uvx) for Python package management. Installs and runs the server from PyPI.",
+                "example_usage": "Create documents, add headings/paragraphs, insert tables/images, format text, convert to PDF",
+                "homepage": "https://github.com/GongRzhe/Office-Word-MCP-Server"
             }
         }
     
