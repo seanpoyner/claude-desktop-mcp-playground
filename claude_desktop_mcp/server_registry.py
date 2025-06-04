@@ -655,6 +655,21 @@ class MCPServerRegistry:
                 "setup_help": "Requires uvx (pip install uvx) for Python package management. Installs and runs the server from PyPI.",
                 "example_usage": "Create documents, add headings/paragraphs, insert tables/images, format text, convert to PDF",
                 "homepage": "https://github.com/GongRzhe/Office-Word-MCP-Server"
+            },
+            "excel": {
+                "name": "Excel MCP Server",
+                "description": "Excel file manipulation without Microsoft Excel. Create, read, modify workbooks, apply formatting, create charts and pivot tables.",
+                "category": "community",
+                "package": "excel-mcp-server",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["excel-mcp-server", "stdio"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires uvx (pip install uvx) for Python package management. Uses stdio transport for local file manipulation.",
+                "example_usage": "Create workbooks, read/write data, apply formatting, create charts, generate pivot tables",
+                "homepage": "https://github.com/haris-musa/excel-mcp-server"
             }
         }
     
