@@ -670,6 +670,21 @@ class MCPServerRegistry:
                 "setup_help": "Requires uvx (pip install uvx) for Python package management. Uses stdio transport for local file manipulation.",
                 "example_usage": "Create workbooks, read/write data, apply formatting, create charts, generate pivot tables",
                 "homepage": "https://github.com/haris-musa/excel-mcp-server"
+            },
+            "quickchart": {
+                "name": "QuickChart Server",
+                "description": "Chart generation using QuickChart.io. Create various chart types (bar, line, pie, doughnut, radar) with Chart.js configurations.",
+                "category": "community",
+                "package": "@gongrzhe/quickchart-mcp-server",
+                "install_method": "npm",
+                "command": "npx",
+                "args_template": ["-y", "@gongrzhe/quickchart-mcp-server"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "No additional setup required. Uses QuickChart.io service for chart generation.",
+                "example_usage": "Generate bar/line/pie charts, create URLs for chart images, download chart files",
+                "homepage": "https://github.com/GongRzhe/Quickchart-MCP-Server"
             }
         }
     
