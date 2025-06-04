@@ -685,6 +685,21 @@ class MCPServerRegistry:
                 "setup_help": "No additional setup required. Uses QuickChart.io service for chart generation.",
                 "example_usage": "Generate bar/line/pie charts, create URLs for chart images, download chart files",
                 "homepage": "https://github.com/GongRzhe/Quickchart-MCP-Server"
+            },
+            "jupyter-notebook": {
+                "name": "Jupyter Notebook MCP",
+                "description": "Connect Claude AI to Jupyter Notebook v6.x through WebSocket. Execute cells, manipulate notebooks, run data analysis.",
+                "category": "community",
+                "package": "jupyter-notebook-mcp",
+                "install_method": "git",
+                "command": "uv",
+                "args_template": ["--directory", "<repo_path>/src", "run", "jupyter_mcp_server.py"],
+                "required_args": ["repo_path"],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires uv package manager and Jupyter Notebook v6.x (NOT JupyterLab/v7). Clone repository, install kernel with 'uv run python -m ipykernel install --name jupyter-mcp', then start WebSocket server in notebook.",
+                "example_usage": "Execute notebook cells, insert/edit cells, save notebooks, run data analysis, create presentations",
+                "homepage": "https://github.com/jjsantos01/jupyter-notebook-mcp"
             }
         }
     
