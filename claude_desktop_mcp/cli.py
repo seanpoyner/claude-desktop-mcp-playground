@@ -576,11 +576,28 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
         # Generate install command
         install_config = registry.generate_install_command(server_id, user_args)
         if not install_config:
-            click.echo("✗ Failed to generate install configuration")
+            if server.get("command") == "auto_detect":
+                click.echo("✗ Failed to detect code-sandbox-mcp installation")
+                click.echo("Please ensure code-sandbox-mcp is installed using the official installer:")
+                click.echo("  Windows: irm https://raw.githubusercontent.com/Automata-Labs-team/code-sandbox-mcp/main/install.ps1 | iex")
+                click.echo("  Linux: curl -fsSL https://raw.githubusercontent.com/Automata-Labs-team/code-sandbox-mcp/main/install.sh | bash")
+            else:
+                click.echo("✗ Failed to generate install configuration")
             return
         
-        # Use custom name if provided
-        instance_name = name or server_id
+        # Use custom name if provided, or auto-generate for git-baby-einstein
+        if name:
+            instance_name = name
+        elif server_id == "git" and "repository" in user_args:
+            # Auto-generate name from repository (e.g., "@seanpoyner/baby-einstein" -> "git-baby-einstein")
+            repo = user_args["repository"]
+            if "/" in repo:
+                repo_name = repo.split("/")[-1]  # Get repo name after "/"
+                instance_name = f"git-{repo_name}"
+            else:
+                instance_name = f"git-{repo}"
+        else:
+            instance_name = server_id
         
         if dry_run:
             click.echo(f"{safe_emoji('🔍', 'Search')} Dry run - would install:")
@@ -589,6 +606,8 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
             click.echo(f"  Args: {' '.join(install_config['args'])}")
             if install_config['env']:
                 click.echo(f"  Environment: {len(install_config['env'])} variable(s)")
+            if install_config.get('executable_path'):
+                click.echo(f"  Detected executable: {install_config['executable_path']}")
             return
         
         # Install npm package if needed
@@ -626,6 +645,8 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
         )
         
         click.echo(f"[SUCCESS] Successfully installed '{instance_name}'")
+        if install_config.get('executable_path'):
+            click.echo(f"[INFO] Using detected executable: {install_config['executable_path']}")
         click.echo("🔄 Restart Claude Desktop for changes to take effect")
         
         # Show usage example

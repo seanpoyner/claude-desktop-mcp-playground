@@ -6,6 +6,9 @@ Registry of available MCP servers with installation and configuration informatio
 from typing import Dict, List, Optional, Any
 import json
 import re
+import os
+import platform
+from pathlib import Path
 
 
 class MCPServerRegistry:
@@ -99,16 +102,16 @@ class MCPServerRegistry:
                 "name": "Fetch Server",
                 "description": "Web content fetching and conversion for efficient LLM usage. Fetch and process web pages.",
                 "category": "official",
-                "package": "@modelcontextprotocol/server-fetch",
-                "install_method": "npm",
-                "command": "npx",
-                "args_template": ["-y", "@modelcontextprotocol/server-fetch"],
+                "package": "mcp-server-fetch",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["mcp-server-fetch"],
                 "required_args": [],
                 "optional_args": [],
                 "env_vars": {},
-                "setup_help": "No additional setup required",
+                "setup_help": "Requires uvx (pip install uvx) for Python package management",
                 "example_usage": "Fetch and analyze web content",
-                "homepage": "https://github.com/modelcontextprotocol/servers"
+                "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch"
             },
             "brave-search": {
                 "name": "Brave Search Server",
@@ -247,16 +250,16 @@ class MCPServerRegistry:
                 "name": "Time Server",
                 "description": "Time and timezone utilities. Get current time, convert between timezones, format dates.",
                 "category": "official",
-                "package": "@modelcontextprotocol/server-time",
-                "install_method": "npm",
-                "command": "npx",
-                "args_template": ["-y", "@modelcontextprotocol/server-time"],
-                "required_args": [],
+                "package": "mcp-server-time",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["mcp-server-time", "--local-timezone", "<timezone>"],
+                "required_args": ["timezone"],
                 "optional_args": [],
                 "env_vars": {},
-                "setup_help": "No additional setup required",
+                "setup_help": "Requires uvx (pip install uvx) for Python package management. Provide timezone in IANA format (e.g., America/New_York, Europe/London, UTC)",
                 "example_usage": "Handle time-based operations and conversions",
-                "homepage": "https://github.com/modelcontextprotocol/servers"
+                "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/time"
             },
             
             # Third-party community servers (selection from 500+ available)
@@ -531,20 +534,46 @@ class MCPServerRegistry:
                 "example_usage": "Access Figma designs and collaborate",
                 "homepage": "https://www.npmjs.com/package/figma-mcp"
             },
-            "json-resume": {
-                "name": "JSON Resume Server",
-                "description": "ModelContextProtocol server for enhancing JSON Resumes with AI capabilities.",
+            "code-sandbox-mcp": {
+                "name": "Code Sandbox MCP Server",
+                "description": "Secure code execution environment for running code snippets and testing applications.",
                 "category": "community",
-                "package": "@jsonresume/mcp",
-                "install_method": "npm",
-                "command": "npx",
-                "args_template": ["-y", "@jsonresume/mcp"],
+                "package": "code-sandbox-mcp",
+                "install_method": "script",
+                "command": "auto_detect",
+                "args_template": "auto_detect",
                 "required_args": [],
                 "optional_args": [],
                 "env_vars": {},
-                "setup_help": "No additional setup required",
-                "example_usage": "Enhance and manage JSON resumes",
-                "homepage": "https://www.npmjs.com/package/@jsonresume/mcp"
+                "setup_help": "Install using: curl -fsSL https://raw.githubusercontent.com/Automata-Labs-team/code-sandbox-mcp/main/install.sh | bash (Linux) or irm https://raw.githubusercontent.com/Automata-Labs-team/code-sandbox-mcp/main/install.ps1 | iex (Windows). Will auto-detect installed location.",
+                "example_usage": "Execute code safely in isolated sandbox environments",
+                "homepage": "https://github.com/Automata-Labs-team/code-sandbox-mcp",
+                "platform_config": {
+                    "windows": {
+                        "command": "cmd",
+                        "args_template": ["/c", "{LOCALAPPDATA}\\code-sandbox-mcp\\code-sandbox-mcp.exe"],
+                        "default_paths": [
+                            "{LOCALAPPDATA}\\code-sandbox-mcp\\code-sandbox-mcp.exe",
+                            "{APPDATA}\\code-sandbox-mcp\\code-sandbox-mcp.exe"
+                        ]
+                    },
+                    "linux": {
+                        "command": "sh",
+                        "args_template": ["-c", "{HOME}/.local/bin/code-sandbox-mcp"],
+                        "default_paths": [
+                            "{HOME}/.local/bin/code-sandbox-mcp",
+                            "/usr/local/bin/code-sandbox-mcp"
+                        ]
+                    },
+                    "darwin": {
+                        "command": "sh", 
+                        "args_template": ["-c", "{HOME}/.local/bin/code-sandbox-mcp"],
+                        "default_paths": [
+                            "{HOME}/.local/bin/code-sandbox-mcp",
+                            "/usr/local/bin/code-sandbox-mcp"
+                        ]
+                    }
+                }
             }
         }
     
@@ -620,13 +649,102 @@ class MCPServerRegistry:
             })
         return results
     
+    def _get_platform_key(self) -> str:
+        """Get platform key for configuration"""
+        system = platform.system().lower()
+        if system == "darwin":
+            return "darwin"
+        elif system == "windows":
+            return "windows"
+        else:
+            return "linux"
+    
+    def _expand_env_vars(self, path: str) -> str:
+        """Expand environment variables in path string"""
+        # Handle common environment variables
+        if "{LOCALAPPDATA}" in path:
+            path = path.replace("{LOCALAPPDATA}", os.environ.get("LOCALAPPDATA", ""))
+        if "{APPDATA}" in path:
+            path = path.replace("{APPDATA}", os.environ.get("APPDATA", ""))
+        if "{HOME}" in path:
+            path = path.replace("{HOME}", str(Path.home()))
+        return path
+    
+    def _find_executable(self, server: Dict[str, Any]) -> Optional[str]:
+        """Find the executable path for a server with platform config"""
+        platform_config = server.get("platform_config", {})
+        current_platform = self._get_platform_key()
+        
+        if current_platform not in platform_config:
+            return None
+        
+        platform_info = platform_config[current_platform]
+        default_paths = platform_info.get("default_paths", [])
+        
+        for path in default_paths:
+            expanded_path = self._expand_env_vars(path)
+            if Path(expanded_path).exists():
+                return expanded_path
+        
+        return None
+    
+    def _configure_platform_specific(self, server: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Configure platform-specific command and args for auto_detect servers"""
+        if server.get("command") != "auto_detect":
+            return None
+        
+        platform_config = server.get("platform_config", {})
+        current_platform = self._get_platform_key()
+        
+        if current_platform not in platform_config:
+            return None
+        
+        platform_info = platform_config[current_platform]
+        executable_path = self._find_executable(server)
+        
+        if not executable_path:
+            return None
+        
+        # Build args from template, replacing executable path
+        args = []
+        for arg_template in platform_info.get("args_template", []):
+            if "{" in arg_template and "}" in arg_template:
+                # This contains environment variables, expand them
+                expanded_arg = self._expand_env_vars(arg_template)
+                args.append(expanded_arg)
+            else:
+                args.append(arg_template)
+        
+        return {
+            "command": platform_info.get("command"),
+            "args": args,
+            "executable_path": executable_path
+        }
+
     def generate_install_command(self, server_id: str, user_args: Dict[str, str]) -> Optional[Dict[str, Any]]:
         """Generate installation command for a server with user-provided arguments"""
         server = self.get_server(server_id)
         if not server:
             return None
         
-        # Build command arguments
+        # Handle platform-specific auto-detection
+        if server.get("command") == "auto_detect":
+            platform_config = self._configure_platform_specific(server)
+            if not platform_config:
+                return None
+            
+            return {
+                "server_id": server_id,
+                "name": server["name"],
+                "command": platform_config["command"],
+                "args": platform_config["args"],
+                "env": {},
+                "package": server.get("package", ""),
+                "install_method": server.get("install_method", "npm"),
+                "executable_path": platform_config["executable_path"]
+            }
+        
+        # Build command arguments for regular servers
         args = []
         for arg_template in server["args_template"]:
             if arg_template.startswith("<") and arg_template.endswith(">"):

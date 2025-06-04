@@ -1,13 +1,12 @@
 {
-  "python-example": {
-    "command": "python",
+  "filesystem": {
+    "command": "npx",
     "args": [
-      "-m",
-      "claude_desktop_mcp.example_server"
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "C:\\Users\\seanp\\"
     ],
-    "env": {
-      "LOG_LEVEL": "INFO"
-    },
+    "env": {},
     "enabled": true
   }
 }
