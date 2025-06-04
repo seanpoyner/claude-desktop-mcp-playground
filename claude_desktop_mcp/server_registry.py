@@ -261,6 +261,21 @@ class MCPServerRegistry:
                 "example_usage": "Handle time-based operations and conversions",
                 "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/time"
             },
+            "computer-control": {
+                "name": "Computer Control Server",
+                "description": "Control computer operations and automation through MCP interface. Interact with desktop applications and system functions.",
+                "category": "community",
+                "package": "computer-control-mcp",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["computer-control-mcp@latest"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires uvx (pip install uvx) for Python package management. WARNING: Initial startup may take 60+ seconds due to large dependencies (OpenCV, ONNX runtime). May require additional system permissions for computer control.",
+                "example_usage": "Automate desktop tasks and control computer operations",
+                "homepage": "https://pypi.org/project/computer-control-mcp/"
+            },
             
             # Third-party community servers (selection from 500+ available)
             "aws-third-party": {
