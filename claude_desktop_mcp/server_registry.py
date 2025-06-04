@@ -158,6 +158,21 @@ class MCPServerRegistry:
                 "example_usage": "Search code, manage issues, analyze GitLab repositories",
                 "homepage": "https://github.com/modelcontextprotocol/servers"
             },
+            "github-docker": {
+                "name": "GitHub Server (Docker)",
+                "description": "Access GitHub repositories using Docker-based deployment. Alternative to npm-based GitHub server with containerized execution.",
+                "category": "community",
+                "package": "mcp/github",
+                "install_method": "docker",
+                "command": "docker",
+                "args_template": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "mcp/github"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {"GITHUB_PERSONAL_ACCESS_TOKEN": "Your GitHub personal access token"},
+                "setup_help": "Requires Docker installed and running. Create a GitHub token at https://github.com/settings/tokens",
+                "example_usage": "Search code, manage issues, analyze repositories via Docker",
+                "homepage": "https://github.com/ckreiling/mcp-server-docker"
+            },
             "postgres": {
                 "name": "PostgreSQL Server",
                 "description": "Connect to PostgreSQL databases. Execute queries, manage schemas, and analyze data.",
@@ -275,6 +290,23 @@ class MCPServerRegistry:
                 "setup_help": "Requires uvx (pip install uvx) for Python package management. WARNING: Initial startup may take 60+ seconds due to large dependencies (OpenCV, ONNX runtime). May require additional system permissions for computer control.",
                 "example_usage": "Automate desktop tasks and control computer operations",
                 "homepage": "https://pypi.org/project/computer-control-mcp/"
+            },
+            "mcp-server-docker": {
+                "name": "Docker MCP Server",
+                "description": "Manage Docker with natural language. Compose containers, introspect running containers, and manage volumes, networks, and images.",
+                "category": "community",
+                "package": "mcp-server-docker",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": ["mcp-server-docker"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {
+                    "DOCKER_HOST": "Docker host URL (optional, e.g., ssh://user@host.com for remote Docker)"
+                },
+                "setup_help": "Requires Docker installed. For remote Docker access, set DOCKER_HOST environment variable to ssh://username@hostname",
+                "example_usage": "Deploy WordPress with MySQL, manage containers with natural language",
+                "homepage": "https://github.com/ckreiling/mcp-server-docker"
             },
             
             # Third-party community servers (selection from 500+ available)
