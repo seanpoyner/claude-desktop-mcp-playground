@@ -707,12 +707,12 @@ class MCPServerRegistry:
                 "category": "community",
                 "package": "screenshotone-mcp",
                 "install_method": "git",
-                "command": "git",
-                "args_template": ["clone", "https://github.com/screenshotone/mcp"],
-                "required_args": [],
+                "command": "node",
+                "args_template": ["<repo_path>/build/index.js"],
+                "required_args": ["repo_path"],
                 "optional_args": [],
                 "env_vars": {"SCREENSHOTONE_API_KEY": "Your ScreenshotOne API key"},
-                "setup_help": "Get API key from ScreenshotOne.com. Repository will be cloned and built automatically.",
+                "setup_help": "Clone https://github.com/screenshotone/mcp, run 'npm install && npm run build', get API key from ScreenshotOne.com, then provide the path to the cloned repository.",
                 "example_usage": "Capture website screenshots, generate page images for documentation, visual testing",
                 "homepage": "https://github.com/screenshotone/mcp"
             }
