@@ -629,6 +629,72 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
                 click.echo(f"[WARNING] Failed to install npm package: {e}")
                 click.echo("You may need to install it manually")
         
+        # Handle git-based servers with automated installation
+        if install_config.get('install_method') == 'git' and 'git_config' in install_config:
+            git_config = install_config['git_config']
+            
+            # Check if already installed
+            if manager.is_git_server_installed(server_id):
+                if not click.confirm(f"Git server '{server_id}' is already installed. Reinstall?"):
+                    # Update the install config to use existing installation
+                    executable_path = manager.get_git_server_executable(
+                        server_id, git_config['executable_path']
+                    )
+                    if executable_path:
+                        install_config['args'] = [str(executable_path)]
+                        click.echo(f"[INFO] Using existing installation: {executable_path}")
+                    else:
+                        click.echo("✗ Existing installation not found or corrupted, please reinstall")
+                        return
+                else:
+                    # Reinstall - clone and build
+                    try:
+                        click.echo(f"🔧 Installing git server from {git_config['url']}...")
+                        server_path = manager.install_git_server(
+                            server_id,
+                            git_config['url'],
+                            git_config.get('build_commands', [])
+                        )
+                        
+                        # Update install config with actual executable path
+                        executable_path = manager.get_git_server_executable(
+                            server_id, git_config['executable_path']
+                        )
+                        if executable_path:
+                            install_config['args'] = [str(executable_path)]
+                            click.echo(f"[SUCCESS] Git server installed to: {server_path}")
+                        else:
+                            click.echo("✗ Installation completed but executable not found")
+                            return
+                            
+                    except Exception as e:
+                        click.echo(f"✗ Failed to install git server: {e}")
+                        return
+            else:
+                # Fresh installation
+                try:
+                    click.echo(f"🔧 Installing git server from {git_config['url']}...")
+                    server_path = manager.install_git_server(
+                        server_id,
+                        git_config['url'],
+                        git_config.get('build_commands', [])
+                    )
+                    
+                    # Update install config with actual executable path
+                    executable_path = manager.get_git_server_executable(
+                        server_id, git_config['executable_path']
+                    )
+                    if executable_path:
+                        install_config['args'] = [str(executable_path)]
+                        click.echo(f"[SUCCESS] Git server installed to: {server_path}")
+                    else:
+                        click.echo("✗ Installation completed but executable not found")
+                        return
+                        
+                except Exception as e:
+                    click.echo(f"✗ Failed to install git server: {e}")
+                    return
+        
         # Check if server already exists
         existing_servers = manager.list_servers()
         if instance_name in existing_servers:

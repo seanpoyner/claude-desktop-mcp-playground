@@ -708,13 +708,18 @@ class MCPServerRegistry:
                 "package": "screenshotone-mcp",
                 "install_method": "git",
                 "command": "node",
-                "args_template": ["<repo_path>/build/index.js"],
-                "required_args": ["repo_path"],
+                "args_template": ["build/index.js"],
+                "required_args": [],
                 "optional_args": [],
                 "env_vars": {"SCREENSHOTONE_API_KEY": "Your ScreenshotOne API key"},
-                "setup_help": "Clone https://github.com/screenshotone/mcp, run 'npm install && npm run build', get API key from ScreenshotOne.com, then provide the path to the cloned repository.",
+                "setup_help": "Get API key from ScreenshotOne.com. Repository will be cloned and built automatically.",
                 "example_usage": "Capture website screenshots, generate page images for documentation, visual testing",
-                "homepage": "https://github.com/screenshotone/mcp"
+                "homepage": "https://github.com/screenshotone/mcp",
+                "git_config": {
+                    "url": "https://github.com/screenshotone/mcp",
+                    "executable_path": "build/index.js",
+                    "build_commands": ["npm install", "npm run build"]
+                }
             }
         }
     
@@ -883,6 +888,27 @@ class MCPServerRegistry:
                 "package": server.get("package", ""),
                 "install_method": server.get("install_method", "npm"),
                 "executable_path": platform_config["executable_path"]
+            }
+        
+        # Handle git-based servers with automated installation
+        if server.get("install_method") == "git" and "git_config" in server:
+            git_config = server["git_config"]
+            
+            # Build environment variables
+            env_vars = {}
+            for env_key, env_description in server["env_vars"].items():
+                if env_key in user_args:
+                    env_vars[env_key] = user_args[env_key]
+            
+            return {
+                "server_id": server_id,
+                "name": server["name"],
+                "command": server["command"],
+                "args": server["args_template"],
+                "env": env_vars,
+                "package": server.get("package", ""),
+                "install_method": "git",
+                "git_config": git_config
             }
         
         # Build command arguments for regular servers

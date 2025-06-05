@@ -6,6 +6,8 @@ Handles importing, exporting, and managing Claude Desktop MCP server configurati
 import json
 import os
 import platform
+import subprocess
+import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -15,6 +17,7 @@ class ClaudeDesktopConfigManager:
     
     def __init__(self):
         self.config_path = self._get_config_path()
+        self.servers_dir = self._get_servers_directory()
     
     def _get_config_path(self) -> Path:
         """Get the Claude Desktop config file path for the current platform."""
@@ -28,6 +31,19 @@ class ClaudeDesktopConfigManager:
             base_path = Path.home() / ".config" / "Claude"
         
         return base_path / "claude_desktop_config.json"
+    
+    def _get_servers_directory(self) -> Path:
+        """Get the directory where MCP servers are installed."""
+        system = platform.system()
+        
+        if system == "Darwin":  # macOS
+            base_path = Path.home() / "Library" / "Application Support" / "Claude" / "mcp_servers"
+        elif system == "Windows":
+            base_path = Path(os.environ.get("APPDATA", "")) / "Claude" / "mcp_servers"
+        else:  # Linux and others
+            base_path = Path.home() / ".config" / "Claude" / "mcp_servers"
+        
+        return base_path
     
     def config_exists(self) -> bool:
         """Check if Claude Desktop config file exists."""
@@ -160,6 +176,64 @@ class ClaudeDesktopConfigManager:
                     validation_result["warnings"].append(f"Command '{command}' for server '{server_name}' may not exist")
         
         return validation_result
+    
+    def install_git_server(self, server_id: str, git_url: str, build_commands: list = None) -> Path:
+        """Install a git-based MCP server."""
+        # Create servers directory if it doesn't exist
+        self.servers_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Define installation path
+        server_path = self.servers_dir / server_id
+        
+        # Remove existing installation if it exists
+        if server_path.exists():
+            shutil.rmtree(server_path)
+        
+        try:
+            # Clone the repository
+            print(f"Cloning {git_url}...")
+            subprocess.run(
+                ["git", "clone", git_url, str(server_path)],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            
+            # Run build commands if provided
+            if build_commands:
+                original_cwd = os.getcwd()
+                try:
+                    os.chdir(server_path)
+                    for command in build_commands:
+                        print(f"Running: {' '.join(command) if isinstance(command, list) else command}")
+                        subprocess.run(command, check=True, shell=True if isinstance(command, str) else False)
+                finally:
+                    os.chdir(original_cwd)
+            
+            return server_path
+            
+        except subprocess.CalledProcessError as e:
+            # Clean up on failure
+            if server_path.exists():
+                shutil.rmtree(server_path)
+            raise RuntimeError(f"Failed to install git server: {e}")
+    
+    def get_git_server_executable(self, server_id: str, executable_path: str) -> Optional[Path]:
+        """Get the full path to a git server's executable."""
+        server_path = self.servers_dir / server_id
+        if not server_path.exists():
+            return None
+        
+        full_executable_path = server_path / executable_path
+        if full_executable_path.exists():
+            return full_executable_path
+        
+        return None
+    
+    def is_git_server_installed(self, server_id: str) -> bool:
+        """Check if a git server is already installed."""
+        server_path = self.servers_dir / server_id
+        return server_path.exists() and server_path.is_dir()
 
 
 def save_simplified_config(config: Dict[str, Dict[str, Any]], filepath: str = "claude_desktop_simplified.json") -> None:
