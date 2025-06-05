@@ -671,6 +671,25 @@ class MCPServerRegistry:
                 "example_usage": "Create workbooks, read/write data, apply formatting, create charts, generate pivot tables",
                 "homepage": "https://github.com/haris-musa/excel-mcp-server"
             },
+            "vectorize": {
+                "name": "Vectorize MCP Server",
+                "description": "Advanced vector retrieval and text extraction using Vectorize. Perform semantic search, extract text from documents, and generate research reports.",
+                "category": "community",
+                "package": "@vectorize-io/vectorize-mcp-server",
+                "install_method": "npm",
+                "command": "npx",
+                "args_template": ["-y", "@vectorize-io/vectorize-mcp-server@latest"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {
+                    "VECTORIZE_ORG_ID": "Your Vectorize Organization ID",
+                    "VECTORIZE_TOKEN": "Your Vectorize API token",
+                    "VECTORIZE_PIPELINE_ID": "Your Vectorize Pipeline ID"
+                },
+                "setup_help": "Get credentials from Vectorize dashboard. Provides vector search, document extraction, and deep research capabilities.",
+                "example_usage": "Semantic document search, text extraction from PDFs, generate research reports",
+                "homepage": "https://github.com/vectorize-io/vectorize-mcp-server"
+            },
             "quickchart": {
                 "name": "QuickChart Server",
                 "description": "Chart generation using QuickChart.io. Create various chart types (bar, line, pie, doughnut, radar) with Chart.js configurations.",
