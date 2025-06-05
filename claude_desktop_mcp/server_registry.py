@@ -700,6 +700,21 @@ class MCPServerRegistry:
                 "setup_help": "Requires uv package manager and Jupyter Notebook v6.x (NOT JupyterLab/v7). Clone repository, install kernel with 'uv run python -m ipykernel install --name jupyter-mcp', then start WebSocket server in notebook.",
                 "example_usage": "Execute notebook cells, insert/edit cells, save notebooks, run data analysis, create presentations",
                 "homepage": "https://github.com/jjsantos01/jupyter-notebook-mcp"
+            },
+            "screenshotone": {
+                "name": "ScreenshotOne Server",
+                "description": "Website screenshot capture using ScreenshotOne API. Render high-quality screenshots of websites and web pages.",
+                "category": "community",
+                "package": "screenshotone-mcp",
+                "install_method": "git",
+                "command": "node",
+                "args_template": ["<repo_path>/build/index.js"],
+                "required_args": ["repo_path"],
+                "optional_args": [],
+                "env_vars": {"SCREENSHOTONE_API_KEY": "Your ScreenshotOne API key"},
+                "setup_help": "Clone repository, run 'npm install && npm run build', get API key from ScreenshotOne.com.",
+                "example_usage": "Capture website screenshots, generate page images for documentation, visual testing",
+                "homepage": "https://github.com/screenshotone/mcp"
             }
         }
     
