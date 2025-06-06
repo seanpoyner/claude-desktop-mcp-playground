@@ -723,7 +723,7 @@ class MCPServerRegistry:
                 "package": "short-video-maker",
                 "install_method": "docker",
                 "command": "docker",
-                "args_template": ["run", "-it", "--rm", "--name", "short-video-maker", "-p", "3123:3123", "-e", "PEXELS_API_KEY=<pexels_api_key>", "gyoridavid/short-video-maker:latest-tiny"],
+                "args_template": ["run", "--rm", "--name", "short-video-maker", "-p", "3123:3123", "-e", "PEXELS_API_KEY=<pexels_api_key>", "gyoridavid/short-video-maker:latest-tiny"],
                 "required_args": ["pexels_api_key"],
                 "optional_args": [],
                 "env_vars": {"PEXELS_API_KEY": "Your free Pexels API key from https://www.pexels.com/api/"},
