@@ -291,6 +291,22 @@ class MCPServerRegistry:
                 "example_usage": "Automate desktop tasks and control computer operations",
                 "homepage": "https://pypi.org/project/computer-control-mcp/"
             },
+            "pg-cli-server": {
+                "name": "PG CLI Server",
+                "description": "MCP server that exposes pg (Claude Desktop MCP Playground) commands as tools. Manage MCP servers directly from Claude Desktop.",
+                "category": "community",
+                "package": "pg-cli-mcp-server",
+                "install_method": "script",
+                "command": "python",
+                "args_template": ["{server_path}/mcp-servers/pg-cli-server/server.py"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Requires Python 3.9+ and the 'pg' command to be installed and available in PATH. Install dependencies with: pip install mcp>=1.0.0",
+                "example_usage": "Search, install, and manage MCP servers directly through Claude Desktop chat",
+                "homepage": "https://github.com/seanpoyner/claude-desktop-mcp-playground",
+                "server_path": "/mnt/c/Users/seanp/claude-desktop-mcp-playground"
+            },
             "mcp-server-docker": {
                 "name": "Docker MCP Server",
                 "description": "Manage Docker with natural language. Compose containers, introspect running containers, and manage volumes, networks, and images.",
@@ -747,11 +763,11 @@ class MCPServerRegistry:
                 "package": "obsidian-mcp",
                 "install_method": "npm",
                 "command": "npx",
-                "args_template": ["-y", "obsidian-mcp", "<vault_path>"],
-                "required_args": ["vault_path"],
-                "optional_args": [],
+                "args_template": ["-y", "obsidian-mcp", "<vault_path1>", "<vault_path2>"],
+                "required_args": ["vault_path1"],
+                "optional_args": ["vault_path2"],
                 "env_vars": {},
-                "setup_help": "Provide the absolute path to your Obsidian vault directory. Multiple vault paths can be specified as additional arguments. IMPORTANT: Backup your vault before use as this server has read/write access.",
+                "setup_help": "Provide the absolute path to your Obsidian vault directory. You can specify multiple vault paths as additional arguments. IMPORTANT: Backup your vault before use as this server has read/write access.",
                 "example_usage": "Read/create/edit notes, search vault contents, manage tags, move/delete notes",
                 "homepage": "https://github.com/StevenStavrakis/obsidian-mcp"
             }
