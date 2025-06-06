@@ -297,15 +297,44 @@ class MCPServerRegistry:
                 "category": "community",
                 "package": "pg-cli-mcp-server",
                 "install_method": "script",
-                "command": "python",
-                "args_template": ["{server_path}/mcp-servers/pg-cli-server/server.py"],
+                "command": "auto_detect",
+                "args_template": [],
                 "required_args": [],
                 "optional_args": [],
                 "env_vars": {},
-                "setup_help": "Requires Python 3.9+ and the 'pg' command to be installed and available in PATH. Install dependencies with: pip install mcp>=1.0.0",
+                "setup_help": "Automatically detects the server path. Requires Python 3.9+ and the 'pg' command in PATH. MCP dependency will be installed automatically if needed.",
                 "example_usage": "Search, install, and manage MCP servers directly through Claude Desktop chat",
-                "homepage": "https://github.com/seanpoyner/claude-desktop-mcp-playground",
-                "server_path": "/mnt/c/Users/seanp/claude-desktop-mcp-playground"
+                "homepage": "https://github.com/seanpoyner/claude-desktop-mcp-playground/tree/main/mcp-servers/pg-cli-server",
+                "platform_config": {
+                    "windows": {
+                        "command": "python",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "C:\\Users\\*\\claude-desktop-mcp-playground\\mcp-servers\\pg-cli-server\\launcher_v2.py",
+                            "{USERPROFILE}\\claude-desktop-mcp-playground\\mcp-servers\\pg-cli-server\\launcher_v2.py",
+                            "{USERPROFILE}\\Desktop\\claude-desktop-mcp-playground\\mcp-servers\\pg-cli-server\\launcher_v2.py"
+                        ]
+                    },
+                    "macos": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py",
+                            "/Users/*/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py"
+                        ]
+                    },
+                    "linux": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py",
+                            "/home/*/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py",
+                            "/mnt/c/Users/*/claude-desktop-mcp-playground/mcp-servers/pg-cli-server/launcher_v2.py"
+                        ]
+                    }
+                }
             },
             "mcp-server-docker": {
                 "name": "Docker MCP Server",
@@ -849,7 +878,7 @@ class MCPServerRegistry:
         """Get platform key for configuration"""
         system = platform.system().lower()
         if system == "darwin":
-            return "darwin"
+            return "macos"
         elif system == "windows":
             return "windows"
         else:
@@ -862,6 +891,8 @@ class MCPServerRegistry:
             path = path.replace("{LOCALAPPDATA}", os.environ.get("LOCALAPPDATA", ""))
         if "{APPDATA}" in path:
             path = path.replace("{APPDATA}", os.environ.get("APPDATA", ""))
+        if "{USERPROFILE}" in path:
+            path = path.replace("{USERPROFILE}", os.environ.get("USERPROFILE", str(Path.home())))
         if "{HOME}" in path:
             path = path.replace("{HOME}", str(Path.home()))
         return path
@@ -875,12 +906,33 @@ class MCPServerRegistry:
             return None
         
         platform_info = platform_config[current_platform]
-        default_paths = platform_info.get("default_paths", [])
         
+        # Check default_paths (existing functionality)
+        default_paths = platform_info.get("default_paths", [])
         for path in default_paths:
             expanded_path = self._expand_env_vars(path)
             if Path(expanded_path).exists():
                 return expanded_path
+        
+        # Check executable_patterns (new functionality for pg-cli-server)
+        executable_patterns = platform_info.get("executable_patterns", [])
+        for pattern in executable_patterns:
+            expanded_pattern = self._expand_env_vars(pattern)
+            
+            # Handle wildcard patterns
+            if "*" in expanded_pattern:
+                import glob
+                matches = glob.glob(expanded_pattern)
+                for match in matches:
+                    if Path(match).exists():
+                        return match
+            else:
+                # Handle ~ expansion for Unix-like paths
+                if expanded_pattern.startswith("~"):
+                    expanded_pattern = str(Path(expanded_pattern).expanduser())
+                
+                if Path(expanded_pattern).exists():
+                    return expanded_pattern
         
         return None
     
@@ -904,7 +956,11 @@ class MCPServerRegistry:
         # Build args from template, replacing executable path
         args = []
         for arg_template in platform_info.get("args_template", []):
-            if "{" in arg_template and "}" in arg_template:
+            if "{executable_path}" in arg_template:
+                # Replace executable path placeholder
+                expanded_arg = arg_template.replace("{executable_path}", executable_path)
+                args.append(expanded_arg)
+            elif "{" in arg_template and "}" in arg_template:
                 # This contains environment variables, expand them
                 expanded_arg = self._expand_env_vars(arg_template)
                 args.append(expanded_arg)
@@ -970,8 +1026,13 @@ class MCPServerRegistry:
                 if placeholder in user_args:
                     args.append(user_args[placeholder])
                 else:
-                    # Required argument missing
-                    return None
+                    # Check if this is a required argument
+                    required_args = server.get("required_args", [])
+                    if placeholder in required_args:
+                        # Required argument missing
+                        return None
+                    # Optional argument missing - skip it
+                    continue
             else:
                 # Static argument
                 args.append(arg_template)
