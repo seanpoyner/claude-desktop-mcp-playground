@@ -716,6 +716,21 @@ class MCPServerRegistry:
                 "example_usage": "Create workbooks, read/write data, apply formatting, create charts, generate pivot tables",
                 "homepage": "https://github.com/haris-musa/excel-mcp-server"
             },
+            "short-video-maker": {
+                "name": "Short Video Maker",
+                "description": "Automated short-form video creation with text-to-speech, captions, background videos from Pexels, and music. Creates TikTok/Instagram/YouTube Shorts.",
+                "category": "community",
+                "package": "short-video-maker",
+                "install_method": "docker",
+                "command": "docker",
+                "args_template": ["run", "-it", "--rm", "--name", "short-video-maker", "-p", "3123:3123", "-e", "PEXELS_API_KEY=<pexels_api_key>", "gyoridavid/short-video-maker:latest-tiny"],
+                "required_args": ["pexels_api_key"],
+                "optional_args": [],
+                "env_vars": {"PEXELS_API_KEY": "Your free Pexels API key from https://www.pexels.com/api/"},
+                "setup_help": "Requires Docker and a free Pexels API key. Uses MCP endpoint at http://localhost:3123/mcp/sse. Requires ≥3GB RAM, ≥2 vCPU, ≥5GB disk space.",
+                "example_usage": "Create short videos with AI narration, automatic captions, background footage, and music",
+                "homepage": "https://github.com/gyoridavid/short-video-maker"
+            },
             "vectorize": {
                 "name": "Vectorize MCP Server",
                 "description": "Advanced vector retrieval and text extraction using Vectorize. Perform semantic search, extract text from documents, and generate research reports.",
