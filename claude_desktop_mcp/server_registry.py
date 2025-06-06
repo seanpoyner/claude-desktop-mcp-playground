@@ -739,6 +739,21 @@ class MCPServerRegistry:
                     "executable_path": "build/index.js",
                     "build_commands": ["npm install", "npm run build"]
                 }
+            },
+            "obsidian": {
+                "name": "Obsidian MCP Server",
+                "description": "Interact with Obsidian vaults. Read, create, edit and manage notes and tags. Provides tools for note management, search, and tag operations.",
+                "category": "community",
+                "package": "obsidian-mcp",
+                "install_method": "npm",
+                "command": "npx",
+                "args_template": ["-y", "obsidian-mcp", "<vault_path>"],
+                "required_args": ["vault_path"],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Provide the absolute path to your Obsidian vault directory. Multiple vault paths can be specified as additional arguments. IMPORTANT: Backup your vault before use as this server has read/write access.",
+                "example_usage": "Read/create/edit notes, search vault contents, manage tags, move/delete notes",
+                "homepage": "https://github.com/StevenStavrakis/obsidian-mcp"
             }
         }
     
