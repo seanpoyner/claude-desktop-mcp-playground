@@ -814,6 +814,96 @@ class MCPServerRegistry:
                 "setup_help": "Provide the absolute path to your Obsidian vault directory. You can specify multiple vault paths as additional arguments. IMPORTANT: Backup your vault before use as this server has read/write access.",
                 "example_usage": "Read/create/edit notes, search vault contents, manage tags, move/delete notes",
                 "homepage": "https://github.com/StevenStavrakis/obsidian-mcp"
+            },
+            "registry-manager": {
+                "name": "Registry Manager",
+                "description": "Dynamically add, manage, and organize custom MCP servers in the registry. Custom servers become discoverable via pg commands.",
+                "category": "community",
+                "package": "registry-manager-mcp-server",
+                "install_method": "script",
+                "command": "auto_detect",
+                "args_template": [],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Automatically detects the server path. Requires Python 3.9+ and MCP dependency will be installed automatically if needed.",
+                "example_usage": "Add custom MCP servers, manage registry, import/export server definitions",
+                "homepage": "https://github.com/seanpoyner/claude-desktop-mcp-playground/tree/main/mcp-servers/registry-manager",
+                "platform_config": {
+                    "windows": {
+                        "command": "python",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "C:\\Users\\*\\claude-desktop-mcp-playground\\mcp-servers\\registry-manager\\launcher.py",
+                            "{USERPROFILE}\\claude-desktop-mcp-playground\\mcp-servers\\registry-manager\\launcher.py",
+                            "{USERPROFILE}\\Desktop\\claude-desktop-mcp-playground\\mcp-servers\\registry-manager\\launcher.py"
+                        ]
+                    },
+                    "macos": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py",
+                            "/Users/*/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py"
+                        ]
+                    },
+                    "linux": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py",
+                            "/home/*/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py",
+                            "/mnt/c/Users/*/claude-desktop-mcp-playground/mcp-servers/registry-manager/launcher.py"
+                        ]
+                    }
+                }
+            },
+            "doc-analyzer": {
+                "name": "Documentation Analyzer",
+                "description": "Analyze MCP server documentation from HTTP URLs to extract registration information. Automates the discovery and registration of new MCP servers.",
+                "category": "community",
+                "package": "doc-analyzer-mcp-server",
+                "install_method": "script",
+                "command": "auto_detect",
+                "args_template": [],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "setup_help": "Automatically detects the server path. Requires Python 3.9+ and aiohttp. Dependencies will be installed automatically if needed.",
+                "example_usage": "Analyze documentation URLs, extract server definitions, generate registry commands",
+                "homepage": "https://github.com/seanpoyner/claude-desktop-mcp-playground/tree/main/mcp-servers/doc-analyzer",
+                "platform_config": {
+                    "windows": {
+                        "command": "python",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "C:\\Users\\*\\claude-desktop-mcp-playground\\mcp-servers\\doc-analyzer\\launcher.py",
+                            "{USERPROFILE}\\claude-desktop-mcp-playground\\mcp-servers\\doc-analyzer\\launcher.py",
+                            "{USERPROFILE}\\Desktop\\claude-desktop-mcp-playground\\mcp-servers\\doc-analyzer\\launcher.py"
+                        ]
+                    },
+                    "macos": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py",
+                            "/Users/*/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py"
+                        ]
+                    },
+                    "linux": {
+                        "command": "python3",
+                        "args_template": ["{executable_path}"],
+                        "executable_patterns": [
+                            "~/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py",
+                            "~/Desktop/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py",
+                            "/home/*/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py",
+                            "/mnt/c/Users/*/claude-desktop-mcp-playground/mcp-servers/doc-analyzer/launcher.py"
+                        ]
+                    }
+                }
             }
         }
     
