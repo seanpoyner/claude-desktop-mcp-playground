@@ -103,6 +103,25 @@ class PGCLIServer:
                         },
                         "required": ["server_id"]
                     }
+                ),
+                types.Tool(
+                    name="pg_config_install_with_config",
+                    description="Install an MCP server with configuration (like API tokens)",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "server_id": {
+                                "type": "string",
+                                "description": "The ID of the server to install"
+                            },
+                            "config": {
+                                "type": "object",
+                                "description": "Configuration parameters (e.g., API tokens, keys)",
+                                "additionalProperties": True
+                            }
+                        },
+                        "required": ["server_id", "config"]
+                    }
                 )
             ]
 
@@ -111,7 +130,14 @@ class PGCLIServer:
             """Handle tool calls by executing PG CLI commands."""
             logger.info(f"Tool call received: {name} with arguments: {arguments}")
             try:
-                result = await self._execute_pg_command(name, arguments)
+                # Handle install commands specially to provide better user feedback
+                if name == "pg_config_install":
+                    result = await self._handle_install_command(arguments)
+                elif name == "pg_config_install_with_config":
+                    result = await self._handle_install_with_config(arguments)
+                else:
+                    result = await self._execute_pg_command(name, arguments)
+                
                 logger.info(f"Tool call completed: {name}, result length: {len(result)}")
                 return [types.TextContent(type="text", text=result)]
             except Exception as e:
@@ -123,7 +149,7 @@ class PGCLIServer:
         """Execute the corresponding PG CLI command."""
         logger.info(f"Starting _execute_pg_command for tool: {tool_name}")
         
-        # For debugging, try the direct Python import method first
+        # Try the direct Python import method first for all commands
         try:
             logger.info("Attempting direct Python import method")
             return await self._execute_direct_python(tool_name, arguments)
@@ -151,10 +177,8 @@ class PGCLIServer:
             ]
         else:
             pg_locations = [
-                "/usr/local/bin/pg",
-                "/usr/bin/pg", 
-                str(Path.home() / ".local" / "bin" / "pg"),
-                "pg"  # Assume it's in PATH
+                # Skip Node.js pg commands that use .gradio-mcp
+                # We want to use the Python pg command from this project
             ]
         
         pg_cmd = None
@@ -210,6 +234,8 @@ class PGCLIServer:
             cmd.extend(["config", "info", arguments["server_id"]])
         elif tool_name == "pg_config_install":
             cmd.extend(["config", "install", arguments["server_id"]])
+            # Always add --yes to avoid confirmation prompts
+            cmd.append("--yes")
             # Add any additional arguments
             if "args" in arguments:
                 for key, value in arguments["args"].items():
@@ -235,13 +261,22 @@ class PGCLIServer:
                     cwd = "/mnt/c/Users/seanp/claude-desktop-mcp-playground"
                 logger.info(f"Using working directory: {cwd}")
             
+            # Use longer timeout for installation commands
+            timeout_seconds = 60 if tool_name == "pg_config_install" else 30
+            
+            # Set environment to handle Unicode properly on Windows
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=10,  # 10 second timeout
+                encoding='utf-8',
+                timeout=timeout_seconds,
                 check=False,
-                cwd=cwd
+                cwd=cwd,
+                env=env
             )
             
             logger.info(f"Command finished with return code: {result.returncode}")
@@ -262,8 +297,8 @@ class PGCLIServer:
             return final_result
             
         except subprocess.TimeoutExpired:
-            logger.error("Command timed out after 10 seconds")
-            return "Error: Command timed out after 10 seconds"
+            logger.error(f"Command timed out after {timeout_seconds} seconds")
+            return f"Error: Command timed out after {timeout_seconds} seconds"
         except Exception as e:
             logger.error(f"Exception during command execution: {e}", exc_info=True)
             return f"Error executing command: {str(e)}"
@@ -275,16 +310,21 @@ class PGCLIServer:
         import sys
         import io
         import platform
+        import os
+        from pathlib import Path
         from contextlib import redirect_stdout, redirect_stderr
         
         # Add the claude_desktop_mcp to path - handle both Windows and Linux paths
         system = platform.system().lower()
+        
+        # Nothing needed here - we'll patch the config manager instead
+        
         if system == "windows":
             project_path = "C:\\Users\\seanp\\claude-desktop-mcp-playground"
         else:
             project_path = "/mnt/c/Users/seanp/claude-desktop-mcp-playground"
         
-        logger.info(f"Adding to sys.path: {project_path}")
+        logger.info(f"System: {system}, Adding to sys.path: {project_path}")
         if project_path not in sys.path:
             sys.path.insert(0, project_path)
         
@@ -312,6 +352,8 @@ class PGCLIServer:
                 args = ["config", "info", arguments["server_id"]]
             elif tool_name == "pg_config_install":
                 args = ["config", "install", arguments["server_id"]]
+                # Always add --yes to avoid confirmation prompts
+                args.append("--yes")
                 # Add any additional arguments
                 if "args" in arguments:
                     for key, value in arguments["args"].items():
@@ -373,6 +415,242 @@ class PGCLIServer:
         
         except Exception as e:
             logger.error(f"Direct Python execution failed: {e}", exc_info=True)
+            raise
+
+    async def _handle_install_command(self, arguments: dict[str, Any]) -> str:
+        """Handle install commands with better user feedback and configuration prompts."""
+        server_id = arguments["server_id"]
+        logger.info(f"Installing MCP server: {server_id}")
+        
+        # First, get server info to understand what's needed
+        try:
+            info_result = await self._execute_pg_command("pg_config_info", {"server_id": server_id})
+            logger.info(f"Server info retrieved for {server_id}")
+        except Exception as e:
+            logger.error(f"Failed to get server info for {server_id}: {e}")
+            return f"Error: Could not retrieve information for server '{server_id}'. Please check if the server exists."
+        
+        # Check if this server requires special configuration
+        special_configs = {
+            "figma": {
+                "required_env": ["FIGMA_ACCESS_TOKEN"],
+                "setup_instructions": """
+To install the Figma MCP server, you need:
+
+1. **Figma Access Token** - Get this from your Figma account:
+   - Go to https://www.figma.com/developers/api#authentication
+   - Generate a personal access token
+   - Copy the token
+
+2. **Installation Options**:
+   
+   **Option A: Provide token now**
+   I can install with your token. Reply with:
+   "Install figma with token: your_token_here"
+   
+   **Option B: Manual setup after installation**
+   I'll install without the token, then provide setup instructions.
+   
+   **Option C: Get more information first**
+   Use: "Get info about figma server"
+
+Which option would you prefer?"""
+            },
+            "github": {
+                "required_env": ["GITHUB_TOKEN"],
+                "setup_instructions": """
+To install the GitHub MCP server, you need:
+
+1. **GitHub Personal Access Token** - Get this from GitHub:
+   - Go to GitHub Settings > Developer settings > Personal access tokens
+   - Generate a new token with appropriate repository permissions
+   - Copy the token
+
+Would you like me to:
+A) Install with your token now (reply: "Install github with token: your_token")
+B) Install without token and provide manual setup instructions
+C) Get more details about the GitHub server first"""
+            },
+            "brave-search": {
+                "required_env": ["BRAVE_API_KEY"],
+                "setup_instructions": """
+To install the Brave Search MCP server, you need:
+
+1. **Brave Search API Key** - Get this from Brave:
+   - Go to https://api.search.brave.com/
+   - Sign up for an API key
+   - Copy the API key
+
+Would you like me to:
+A) Install with your API key now (reply: "Install brave-search with key: your_key")
+B) Install without key and provide manual setup instructions
+C) Get more details about the Brave Search server first"""
+            }
+        }
+        
+        if server_id in special_configs:
+            config = special_configs[server_id]
+            return f"🔧 **{server_id.title()} Server Configuration Required**\n\n{config['setup_instructions']}"
+        
+        # For servers that don't need special config, proceed with installation
+        try:
+            result = await self._execute_pg_command("pg_config_install", arguments)
+            
+            # Check if installation was successful or if npm package is missing
+            if "npm package NOT installed" in result:
+                return f"⚠️ **{server_id} configuration added but npm package NOT installed!**\n\n{result}\n\n💡 **To complete installation:**\n1. Install the npm package manually (see command above)\n2. OR re-run with auto-install: `pg config install {server_id} --auto-install`\n3. Then restart Claude Desktop"
+            elif "Successfully installed" in result and "npm package NOT installed" not in result:
+                return f"✅ **{server_id} installed successfully!**\n\n{result}\n\n💡 **Next steps:**\n- Restart Claude Desktop to load the new server\n- The server should appear in your MCP server list\n- Check the installation with: `pg config show`"
+            elif "already installed" in result.lower():
+                return f"ℹ️ **{server_id} is already installed.**\n\n{result}"
+            else:
+                return f"⚠️ **Installation may need attention:**\n\n{result}\n\n💡 Try checking the status with: `pg config show`"
+                
+        except Exception as e:
+            logger.error(f"Installation failed for {server_id}: {e}")
+            return f"❌ **Installation failed for {server_id}**\n\nError: {str(e)}\n\n💡 **Troubleshooting:**\n- Check if you have the required dependencies\n- Try getting more info first: `pg config info {server_id}`\n- Ensure you have internet connectivity"
+
+    async def _handle_install_with_config(self, arguments: dict[str, Any]) -> str:
+        """Handle install commands with user-provided configuration."""
+        server_id = arguments["server_id"]
+        config = arguments["config"]
+        logger.info(f"Installing MCP server {server_id} with config: {list(config.keys())}")
+        
+        # Build install arguments with environment variables
+        install_args = {"server_id": server_id}
+        
+        # Convert config to environment variables for the installation
+        env_vars = {}
+        config_mapping = {
+            "figma": {
+                "token": "FIGMA_TOKEN", 
+                "api_token": "FIGMA_TOKEN",
+                "FIGMA_TOKEN": "FIGMA_TOKEN",
+                "FIGMA_ACCESS_TOKEN": "FIGMA_TOKEN"
+            },
+            "github": {"token": "GITHUB_TOKEN", "api_token": "GITHUB_TOKEN", "github_token": "GITHUB_TOKEN"},
+            "brave-search": {"key": "BRAVE_API_KEY", "api_key": "BRAVE_API_KEY"},
+            "slack": {"token": "SLACK_BOT_TOKEN", "bot_token": "SLACK_BOT_TOKEN"},
+            "google-drive": {"credentials": "GOOGLE_DRIVE_CREDENTIALS_FILE"},
+            "postgres": {
+                "host": "POSTGRES_HOST",
+                "port": "POSTGRES_PORT", 
+                "database": "POSTGRES_DB",
+                "user": "POSTGRES_USER",
+                "password": "POSTGRES_PASSWORD"
+            }
+        }
+        
+        if server_id in config_mapping:
+            mapping = config_mapping[server_id]
+            for user_key, env_var in mapping.items():
+                if user_key in config:
+                    env_vars[env_var] = config[user_key]
+        
+        # Add environment variables to install args
+        if env_vars:
+            install_args["env"] = env_vars
+        
+        try:
+            # Execute installation with environment variables by modifying the execution context
+            if env_vars:
+                result = await self._execute_pg_command_with_env("pg_config_install", install_args, env_vars)
+            else:
+                result = await self._execute_pg_command("pg_config_install", install_args)
+            
+            # Provide user-friendly feedback
+            if "Successfully installed" in result or "Installation completed" in result:
+                env_summary = ", ".join([f"{k}=***" for k in env_vars.keys()])
+                return f"✅ **{server_id} installed successfully with configuration!**\n\n{result}\n\n🔧 **Configuration applied:**\n- {env_summary}\n\n💡 **Next steps:**\n- Restart Claude Desktop to load the new server\n- The server should now be available with your configuration\n- Test the server functionality"
+            else:
+                return f"⚠️ **Installation completed with configuration, but please verify:**\n\n{result}\n\n🔧 **Configuration provided:** {list(env_vars.keys())}"
+                
+        except Exception as e:
+            logger.error(f"Configured installation failed for {server_id}: {e}")
+            return f"❌ **Installation with configuration failed for {server_id}**\n\nError: {str(e)}\n\n💡 **Note:** Your configuration was not saved. Please try again or install manually."
+
+    async def _execute_pg_command_with_env(self, tool_name: str, arguments: dict[str, Any], env_vars: dict[str, str]) -> str:
+        """Execute pg command with custom environment variables."""
+        logger.info(f"Executing {tool_name} with environment variables: {list(env_vars.keys())}")
+        
+        import sys
+        import io
+        import os
+        import platform
+        from contextlib import redirect_stdout, redirect_stderr
+        
+        # Add the claude_desktop_mcp to path
+        system = platform.system().lower()
+        if system == "windows":
+            project_path = "C:\\Users\\seanp\\claude-desktop-mcp-playground"
+        else:
+            project_path = "/mnt/c/Users/seanp/claude-desktop-mcp-playground"
+        
+        if project_path not in sys.path:
+            sys.path.insert(0, project_path)
+        
+        try:
+            from claude_desktop_mcp.cli import main
+            
+            # Build command args (remove env from arguments)
+            clean_args = {k: v for k, v in arguments.items() if k != "env"}
+            
+            if tool_name == "pg_config_install":
+                args = ["config", "install", clean_args["server_id"], "--yes"]
+                # Add environment variables as CLI arguments
+                for key, value in env_vars.items():
+                    args.extend(["--env", f"{key}={value}"])
+            else:
+                return await self._execute_pg_command(tool_name, clean_args)
+            
+            logger.info(f"Direct execution with env vars: {args}")
+            
+            try:
+                # Capture stdout and stderr
+                stdout_capture = io.StringIO()
+                stderr_capture = io.StringIO()
+                
+                # Backup original argv and replace it
+                original_argv = sys.argv
+                sys.argv = ["pg"] + args
+                
+                with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                    main()
+                
+                # Get captured output
+                stdout_content = stdout_capture.getvalue()
+                stderr_content = stderr_capture.getvalue()
+                
+                # Return combined output
+                output_parts = []
+                if stdout_content:
+                    output_parts.append(f"Output:\n{stdout_content}")
+                if stderr_content:
+                    output_parts.append(f"Errors:\n{stderr_content}")
+                
+                return "\n\n".join(output_parts) if output_parts else "Command completed successfully with no output."
+                
+            finally:
+                # Restore original argv
+                sys.argv = original_argv
+                
+        except SystemExit as e:
+            # Handle sys.exit() calls from CLI
+            stdout_content = stdout_capture.getvalue()
+            stderr_content = stderr_capture.getvalue()
+            
+            output_parts = []
+            if stdout_content:
+                output_parts.append(f"Output:\n{stdout_content}")
+            if stderr_content:
+                output_parts.append(f"Errors:\n{stderr_content}")
+            if e.code != 0:
+                output_parts.append(f"Exit code: {e.code}")
+            
+            return "\n\n".join(output_parts) if output_parts else "Command completed successfully with no output."
+        
+        except Exception as e:
+            logger.error(f"Direct Python execution with env failed: {e}", exc_info=True)
             raise
 
     async def run(self):

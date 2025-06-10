@@ -19,16 +19,80 @@ class ClaudeDesktopConfigManager:
         self.config_path = self._get_config_path()
         self.servers_dir = self._get_servers_directory()
     
+    def _is_wsl(self) -> bool:
+        """Check if we're running in WSL."""
+        system = platform.system()
+        if system == "Linux":
+            try:
+                with open("/proc/version", "r") as f:
+                    version_info = f.read().lower()
+                    if "microsoft" in version_info or "wsl" in version_info:
+                        return True
+            except:
+                pass
+        return False
+    
     def _get_config_path(self) -> Path:
         """Get the Claude Desktop config file path for the current platform."""
         system = platform.system()
         
+        # Check if we're running in WSL
+        is_wsl = False
+        if system == "Linux":
+            # Check for WSL by looking for Microsoft or WSL in /proc/version
+            try:
+                with open("/proc/version", "r") as f:
+                    version_info = f.read().lower()
+                    if "microsoft" in version_info or "wsl" in version_info:
+                        is_wsl = True
+            except:
+                pass
+        
         if system == "Darwin":  # macOS
             base_path = Path.home() / "Library" / "Application Support" / "Claude"
-        elif system == "Windows":
-            base_path = Path(os.environ.get("APPDATA", "")) / "Claude"
-        else:  # Linux and others
-            base_path = Path.home() / ".config" / "Claude"
+        elif system == "Windows" or is_wsl:
+            # For Windows or WSL, use the Windows path
+            if is_wsl:
+                # In WSL, we need to use the Windows user profile path
+                # Try to find the Windows username by checking environment or existing paths
+                windows_appdata = None
+                
+                # Method 1: Check if APPDATA is set in WSL (sometimes it is)
+                if "APPDATA" in os.environ:
+                    windows_appdata = os.environ["APPDATA"].replace("C:\\", "/mnt/c/").replace("\\", "/")
+                
+                # Method 2: Try to find the actual Windows user directory
+                if not windows_appdata:
+                    # Look for the claude config in common Windows user directories
+                    users_dir = Path("/mnt/c/Users")
+                    if users_dir.exists():
+                        for user_dir in users_dir.iterdir():
+                            if user_dir.is_dir() and user_dir.name not in ["Default", "Public", "WsiAccount", "defaultuser0"]:
+                                potential_config = user_dir / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
+                                if potential_config.exists():
+                                    windows_appdata = str(user_dir / "AppData" / "Roaming")
+                                    break
+                
+                # Method 3: Fallback to common pattern
+                if not windows_appdata:
+                    # Try the most common pattern
+                    windows_appdata = "/mnt/c/Users/seanp/AppData/Roaming"
+                
+                base_path = Path(windows_appdata) / "Claude"
+            else:
+                appdata = os.environ.get("APPDATA")
+                if not appdata:
+                    # Fallback to typical Windows path if APPDATA is not set
+                    appdata = f"C:\\Users\\{os.environ.get('USERNAME', 'seanp')}\\AppData\\Roaming"
+                base_path = Path(appdata) / "Claude"
+        else:  # Linux (non-WSL) and others
+            # IMPORTANT: Double-check we're not in WSL
+            if is_wsl:
+                # This should never happen, but just in case
+                windows_appdata = "/mnt/c/Users/seanp/AppData/Roaming"
+                base_path = Path(windows_appdata) / "Claude"
+            else:
+                base_path = Path.home() / ".config" / "Claude"
         
         return base_path / "claude_desktop_config.json"
     
@@ -36,12 +100,63 @@ class ClaudeDesktopConfigManager:
         """Get the directory where MCP servers are installed."""
         system = platform.system()
         
+        # Check if we're running in WSL
+        is_wsl = False
+        if system == "Linux":
+            # Check for WSL by looking for Microsoft or WSL in /proc/version
+            try:
+                with open("/proc/version", "r") as f:
+                    version_info = f.read().lower()
+                    if "microsoft" in version_info or "wsl" in version_info:
+                        is_wsl = True
+            except:
+                pass
+        
         if system == "Darwin":  # macOS
             base_path = Path.home() / "Library" / "Application Support" / "Claude" / "mcp_servers"
-        elif system == "Windows":
-            base_path = Path(os.environ.get("APPDATA", "")) / "Claude" / "mcp_servers"
-        else:  # Linux and others
-            base_path = Path.home() / ".config" / "Claude" / "mcp_servers"
+        elif system == "Windows" or is_wsl:
+            # For Windows or WSL, use the Windows path
+            if is_wsl:
+                # In WSL, we need to use the Windows user profile path
+                # Try to find the Windows username by checking environment or existing paths
+                windows_appdata = None
+                
+                # Method 1: Check if APPDATA is set in WSL (sometimes it is)
+                if "APPDATA" in os.environ:
+                    windows_appdata = os.environ["APPDATA"].replace("C:\\", "/mnt/c/").replace("\\", "/")
+                
+                # Method 2: Try to find the actual Windows user directory
+                if not windows_appdata:
+                    # Look for the claude config in common Windows user directories
+                    users_dir = Path("/mnt/c/Users")
+                    if users_dir.exists():
+                        for user_dir in users_dir.iterdir():
+                            if user_dir.is_dir() and user_dir.name not in ["Default", "Public", "WsiAccount", "defaultuser0"]:
+                                potential_config = user_dir / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
+                                if potential_config.exists():
+                                    windows_appdata = str(user_dir / "AppData" / "Roaming")
+                                    break
+                
+                # Method 3: Fallback to common pattern
+                if not windows_appdata:
+                    # Try the most common pattern
+                    windows_appdata = "/mnt/c/Users/seanp/AppData/Roaming"
+                
+                base_path = Path(windows_appdata) / "Claude" / "mcp_servers"
+            else:
+                appdata = os.environ.get("APPDATA")
+                if not appdata:
+                    # Fallback to typical Windows path if APPDATA is not set
+                    appdata = f"C:\\Users\\{os.environ.get('USERNAME', 'seanp')}\\AppData\\Roaming"
+                base_path = Path(appdata) / "Claude" / "mcp_servers"
+        else:  # Linux (non-WSL) and others
+            # IMPORTANT: Double-check we're not in WSL
+            if is_wsl:
+                # This should never happen, but just in case
+                windows_appdata = "/mnt/c/Users/seanp/AppData/Roaming"
+                base_path = Path(windows_appdata) / "Claude" / "mcp_servers"
+            else:
+                base_path = Path.home() / ".config" / "Claude" / "mcp_servers"
         
         return base_path
     
@@ -62,12 +177,23 @@ class ClaudeDesktopConfigManager:
     
     def save_config(self, config: Dict[str, Any]) -> None:
         """Save configuration to Claude Desktop config file."""
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"save_config called - self.config_path: {self.config_path}")
+        logger.info(f"save_config called - config path exists: {self.config_path.exists()}")
+        
+        # DEBUG: Print to stderr to see in pg-cli-server logs
+        import sys
+        print(f"[CONFIG_MANAGER] Saving to: {self.config_path}", file=sys.stderr)
+        
         # Ensure directory exists
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         
         try:
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
+            logger.info(f"Successfully saved config to: {self.config_path}")
+            print(f"[CONFIG_MANAGER] Successfully saved to: {self.config_path}", file=sys.stderr)
         except IOError as e:
             raise RuntimeError(f"Failed to save Claude Desktop config: {e}")
     
