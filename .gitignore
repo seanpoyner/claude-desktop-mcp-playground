@@ -338,3 +338,37 @@ dist/
 # Finder (MacOS)
 .DS_Store
 
+# Build artifacts
+*.tar.gz
+*.zip
+mcp-server-manager-*/
+portable/
+mcp-server-manager_*.deb
+mcp-server-manager_*_amd64/
+
+# Build scripts (temporary)
+build-*.py
+build-*.ps1
+finish-*.py
+test-build.py
+
+# Test files (temporary)
+test_*.py
+!tests/test_*.py
+
+# Installation and fix scripts
+fix-*.bat
+fix-*.ps1
+*_uninstall*.bat
+complete_uninstall.bat
+
+# Custom/temporary configuration
+custom_registry.json
+version_info.txt
+
+# MCP GUI backend virtual environment
+mcp-gui/backend/venv/
+
+# Node/npm temporary files
+mcp-gui/=*
+
