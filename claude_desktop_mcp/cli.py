@@ -506,10 +506,15 @@ def info(server_id: str):
 @click.option('--name', help='Custom name for the server instance')
 @click.option('--arg', 'args', multiple=True, help='Server arguments (key=value)')
 @click.option('--env', 'env_vars', multiple=True, help='Environment variables (key=value)')
-@click.option('--auto-install', is_flag=True, help='Automatically install npm package if needed')
+@click.option('--auto-install', is_flag=True, help='Automatically install npm package if needed (RECOMMENDED for npm-based servers)')
 @click.option('--dry-run', is_flag=True, help='Show what would be installed without doing it')
-def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_install: bool, dry_run: bool):
-    """Install an MCP server from the registry"""
+@click.option('--yes', is_flag=True, help='Automatically confirm overwrite of existing servers')
+def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_install: bool, dry_run: bool, yes: bool):
+    """Install an MCP server from the registry
+    
+    For npm-based servers, use --auto-install to automatically install the npm package.
+    Without this flag, only the configuration is added and you must install the npm package manually.
+    """
     registry = MCPServerRegistry()
     manager = ClaudeDesktopConfigManager()
     
@@ -611,23 +616,101 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
             return
         
         # Install npm package if needed
-        if auto_install and server.get('install_method') == 'npm' and server.get('package'):
-            click.echo(f"📦 Installing npm package: {server['package']}")
-            try:
-                import subprocess
-                result = subprocess.run(
-                    ["npm", "install", "-g", server['package']],
-                    capture_output=True,
-                    text=True,
-                    timeout=120
-                )
-                if result.returncode == 0:
-                    click.echo("[SUCCESS] npm package installed successfully")
-                else:
-                    click.echo(f"[WARNING] npm install warning: {result.stderr[:100]}")
-            except Exception as e:
-                click.echo(f"[WARNING] Failed to install npm package: {e}")
-                click.echo("You may need to install it manually")
+        npm_installed = False
+        npm_required = server.get('install_method') == 'npm' and server.get('package')
+        
+        if npm_required:
+            if auto_install:
+                click.echo(f"📦 Installing npm package: {server['package']}")
+                try:
+                    import subprocess
+                    result = subprocess.run(
+                        ["npm", "install", "-g", server['package']],
+                        capture_output=True,
+                        text=True,
+                        timeout=120
+                    )
+                    if result.returncode == 0:
+                        click.echo("[SUCCESS] npm package installed successfully")
+                        npm_installed = True
+                    else:
+                        click.echo(f"[WARNING] npm install warning: {result.stderr[:100]}")
+                except Exception as e:
+                    click.echo(f"[WARNING] Failed to install npm package: {e}")
+                    click.echo("You may need to install it manually")
+            else:
+                # Check if npm package is already installed
+                try:
+                    import subprocess
+                    check_result = subprocess.run(
+                        ["npm", "list", "-g", server['package']],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if check_result.returncode == 0 and server['package'] in check_result.stdout:
+                        npm_installed = True
+                        click.echo(f"[INFO] npm package '{server['package']}' is already installed")
+                    else:
+                        click.echo(f"[WARNING] npm package '{server['package']}' is NOT installed")
+                        click.echo(f"[WARNING] Run 'npm install -g {server['package']}' manually or use --auto-install flag")
+                except Exception as e:
+                    click.echo(f"[WARNING] Could not check npm package status: {e}")
+        
+        # Handle uvx-based servers
+        uvx_installed = False
+        uvx_required = server.get('install_method') == 'uvx' and server.get('package')
+        
+        if uvx_required:
+            if auto_install:
+                click.echo(f"📦 Installing uvx package: {server['package']}")
+                try:
+                    import subprocess
+                    # First check if uvx is installed
+                    uvx_check = subprocess.run(
+                        ["uvx", "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if uvx_check.returncode != 0:
+                        click.echo("[WARNING] uvx is not installed. Install it with: pip install uvx")
+                        click.echo("[WARNING] Then re-run this command with --auto-install")
+                    else:
+                        # Note: uvx doesn't require installation, it runs packages on demand
+                        # Just verify the package can be run
+                        result = subprocess.run(
+                            ["uvx", server['package'], "--help"],
+                            capture_output=True,
+                            text=True,
+                            timeout=30
+                        )
+                        if result.returncode == 0:
+                            click.echo("[SUCCESS] uvx package installed successfully")
+                            uvx_installed = True
+                        else:
+                            click.echo(f"[WARNING] uvx install warning: {result.stderr[:100]}")
+                except Exception as e:
+                    click.echo(f"[WARNING] Failed to install uvx package: {e}")
+                    click.echo("You may need to install it manually")
+            else:
+                # Check if uvx is available
+                try:
+                    import subprocess
+                    uvx_check = subprocess.run(
+                        ["uvx", "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if uvx_check.returncode == 0:
+                        uvx_installed = True
+                        click.echo(f"[INFO] uvx is available, package will be run on demand")
+                    else:
+                        click.echo(f"[WARNING] uvx is NOT installed")
+                        click.echo(f"[WARNING] Install uvx with 'pip install uvx' for this server to work")
+                except Exception as e:
+                    click.echo(f"[WARNING] Could not check uvx status: {e}")
         
         # Handle git-based servers with automated installation
         if install_config.get('install_method') == 'git' and 'git_config' in install_config:
@@ -698,7 +781,7 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
         # Check if server already exists
         existing_servers = manager.list_servers()
         if instance_name in existing_servers:
-            if not click.confirm(f"Server '{instance_name}' already exists. Overwrite?"):
+            if not yes and not click.confirm(f"Server '{instance_name}' already exists. Overwrite?"):
                 click.echo("Cancelled.")
                 return
         
@@ -710,9 +793,22 @@ def install(server_id: str, name: str, args: tuple, env_vars: tuple, auto_instal
             install_config['env']
         )
         
-        click.echo(f"[SUCCESS] Successfully installed '{instance_name}'")
-        if install_config.get('executable_path'):
-            click.echo(f"[INFO] Using detected executable: {install_config['executable_path']}")
+        # Report success with appropriate message
+        if npm_required and not npm_installed:
+            click.echo(f"[WARNING] Server '{instance_name}' configuration added but npm package NOT installed")
+            click.echo(f"[WARNING] The server will NOT work until you install the package manually:")
+            click.echo(f"[WARNING]   npm install -g {server['package']}")
+            click.echo(f"[WARNING] Or re-run with --auto-install flag to install automatically")
+        elif uvx_required and not uvx_installed:
+            click.echo(f"[WARNING] Server '{instance_name}' configuration added but uvx is NOT installed")
+            click.echo(f"[WARNING] The server will NOT work until you install uvx:")
+            click.echo(f"[WARNING]   pip install uvx")
+            click.echo(f"[WARNING] Then the server will run the package on demand")
+        else:
+            click.echo(f"[SUCCESS] Successfully installed '{instance_name}'")
+            if install_config.get('executable_path'):
+                click.echo(f"[INFO] Using detected executable: {install_config['executable_path']}")
+        
         click.echo("🔄 Restart Claude Desktop for changes to take effect")
         
         # Show usage example
