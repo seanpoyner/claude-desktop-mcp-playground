@@ -19,7 +19,8 @@ class MCPServerRegistry:
     
     def _load_registry(self) -> Dict[str, Dict[str, Any]]:
         """Load the MCP server registry"""
-        return {
+        # Start with hardcoded servers
+        servers = {
             # Current official @modelcontextprotocol servers (in main repo)
             "filesystem": {
                 "name": "Filesystem Server",
@@ -906,6 +907,20 @@ class MCPServerRegistry:
                 }
             }
         }
+        
+        # Load custom servers from custom_registry.json if it exists
+        custom_registry_path = Path(__file__).parent.parent / "custom_registry.json"
+        if custom_registry_path.exists():
+            try:
+                with open(custom_registry_path, 'r') as f:
+                    custom_servers = json.load(f)
+                    # Merge custom servers into the registry
+                    servers.update(custom_servers)
+            except Exception as e:
+                # Log error but continue with hardcoded servers
+                print(f"Warning: Failed to load custom_registry.json: {e}")
+        
+        return servers
     
     def search(self, query: str) -> List[Dict[str, Any]]:
         """Search for servers matching the query"""
