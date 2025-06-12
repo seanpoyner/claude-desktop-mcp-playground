@@ -305,6 +305,10 @@ function App() {
       ...serverInfo?.required_args?.reduce((acc, arg) => {
         acc[arg] = '';
         return acc;
+      }, {}) || {},
+      ...serverInfo?.optional_args?.reduce((acc, arg) => {
+        acc[arg] = '';
+        return acc;
       }, {}) || {}
     });
     setShowInstallModal(true);
@@ -379,7 +383,7 @@ ${bugReportData.severity}
 ## Additional Context
 Please provide any additional context or screenshots that might help us understand the issue.`);
 
-    const githubUrl = `https://github.com/modelcontextprotocol/servers/issues/new?title=${issueTitle}&body=${issueBody}&labels=bug`;
+    const githubUrl = `https://github.com/seanpoyner/claude-desktop-mcp-playground/issues/new?title=${issueTitle}&body=${issueBody}&labels=bug`;
     
     // Open GitHub in new tab
     window.open(githubUrl, '_blank');
@@ -736,6 +740,14 @@ Please provide any additional context or screenshots that might help us understa
                         </div>
                       )}
                       
+                      {server.optional_args && server.optional_args.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Info className="w-4 h-4 text-blue-400" />
+                          <span className="text-slate-400">Optional Args:</span>
+                          <span className="text-blue-300">{server.optional_args.join(', ')}</span>
+                        </div>
+                      )}
+                      
                       {Object.keys(server.env_vars || {}).length > 0 && (
                         <div className="flex items-center gap-2">
                           <Settings className="w-4 h-4 text-purple-400" />
@@ -806,6 +818,21 @@ Please provide any additional context or screenshots that might help us understa
                       onChange={(e) => setInstallFormData(prev => ({ ...prev, [arg]: e.target.value }))}
                       className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
                       placeholder={`Enter ${arg}`}
+                    />
+                  </div>
+                ))}
+
+                {selectedServer.optional_args?.map(arg => (
+                  <div key={arg}>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      {arg} <span className="text-slate-500">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={installFormData[arg] || ''}
+                      onChange={(e) => setInstallFormData(prev => ({ ...prev, [arg]: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                      placeholder={`Enter ${arg} (optional)`}
                     />
                   </div>
                 ))}

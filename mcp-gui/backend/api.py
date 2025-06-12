@@ -155,6 +155,11 @@ class MCPBackendAPI:
                 'name': 'GitHub Docker Server',
                 'description': 'Docker-based GitHub server with containerized execution. Enhanced security and isolation.',
                 'category': 'official'
+            },
+            'pg-cli-server': {
+                'name': 'PG CLI Server',
+                'description': 'MCP server that exposes pg (Claude Desktop MCP Playground) commands as tools. Manage MCP servers directly from Claude.',
+                'category': 'community'
             }
         }
         
