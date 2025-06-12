@@ -1,12 +1,14 @@
 # Claude Desktop MCP Playground
 
-A comprehensive command-line tool for managing Claude Desktop's Model Context Protocol (MCP) servers with easy installation, configuration, and a searchable registry of 30+ available servers.
+A comprehensive command-line tool and desktop GUI for managing Claude Desktop's Model Context Protocol (MCP) servers with easy installation, configuration, and a searchable registry of 44+ available servers.
 
 ## 🌟 Features
 
-- **🔍 Server Discovery** - Search through 30+ MCP servers from the official repository
+- **🖥️ Desktop GUI Application** - Modern Electron-based desktop interface with React frontend
+- **🔍 Server Discovery** - Search through 44+ MCP servers from official and community sources
 - **⚡ One-Click Installation** - Install MCP servers with automatic configuration
-- **🛠️ Configuration Management** - Easy-to-use CLI for managing Claude Desktop settings
+- **🛠️ Configuration Management** - CLI and GUI tools for managing Claude Desktop settings
+- **📊 Visual Dashboard** - Real-time server status monitoring and management
 - **🌍 Cross-Platform** - Works on macOS, Windows, and Linux
 - **🚀 Quick Setup** - Automated dependency detection and installation
 - **📦 Complete Registry** - Official and community servers with descriptions and setup help
@@ -51,6 +53,25 @@ pg setup
 
 ## 💡 Usage
 
+### Desktop GUI Application
+
+**Launch the GUI:**
+```bash
+# After installation, start the desktop application
+cd mcp-gui
+npm run dev           # Development mode
+npm run build && npm run electron    # Production mode
+```
+
+The GUI provides:
+- **Visual Dashboard** - Server status overview and statistics
+- **One-Click Installation** - Install servers with guided configuration forms
+- **Real-Time Monitoring** - Live server status and error reporting
+- **Configuration Editor** - Visual interface for server settings
+- **Smart Search** - Find servers by name, description, or category
+
+### CLI Interface
+
 ### Search and Install MCP Servers
 
 ```bash
@@ -89,9 +110,9 @@ pg setup --quick
 
 ## 📦 Available Servers
 
-The registry includes 30+ servers from the official [MCP servers repository](https://github.com/modelcontextprotocol/servers):
+The registry includes **44 servers** from official and community sources:
 
-### Official Servers
+### Official Servers (15)
 - **filesystem** - Secure file operations with access controls
 - **memory** - Knowledge graph-based persistent memory
 - **puppeteer** - Browser automation and web scraping
@@ -100,13 +121,15 @@ The registry includes 30+ servers from the official [MCP servers repository](htt
 - **slack** - Slack workspace interaction
 - **google-drive/google-maps** - Google services integration
 
-### Popular Community Servers  
-- **aws/azure/cloudflare** - Cloud platform management
-- **elasticsearch/clickhouse** - Database and search engines
-- **linear/hubspot** - Project and CRM management
-- **jetbrains** - IDE integration
-- **e2b** - Code execution sandboxes
-- **firecrawl/browserbase** - Web scraping and automation
+### Popular Community Servers (29)
+- **Cloud Platforms**: aws, azure, cloudflare, heroku
+- **Databases**: elasticsearch, clickhouse
+- **Development Tools**: jetbrains, xcode, e2b
+- **Web & Automation**: firecrawl, browserbase, screenshotone
+- **Project Management**: linear, hubspot, grafana
+- **Office & Productivity**: excel, office-word, office-powerpoint
+- **Data Analysis**: jupyter-notebook, quickchart
+- **AI & Search**: vectorize, kagi, exa
 
 [View complete server list →](https://github.com/modelcontextprotocol/servers)
 
@@ -119,6 +142,7 @@ Claude Desktop configuration files:
 
 ## 🛠️ Development
 
+### CLI Development
 ```bash
 # Setup development environment
 python -m venv .venv
@@ -133,6 +157,26 @@ pytest tests/
 # Code formatting
 black .
 isort .
+```
+
+### GUI Development
+```bash
+# Setup GUI development
+cd mcp-gui
+npm install
+
+# Install Python backend dependencies
+pip install flask flask-cors
+
+# Development mode (3 terminals)
+python backend/api.py      # Terminal 1: Backend API
+npm run dev               # Terminal 2: React frontend  
+npm run electron-dev      # Terminal 3: Electron app
+
+# Build for distribution
+npm run build             # Build React app
+npm run dist             # Package for current platform
+npm run dist:all         # Package for all platforms
 ```
 
 ## 📚 Examples

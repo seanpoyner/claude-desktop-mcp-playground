@@ -12,6 +12,7 @@ Welcome to the Claude Desktop MCP Playground documentation!
 ### User Guides
 - **[Server Management](server-management.md)** - Finding, installing, and configuring MCP servers
 - **[Configuration Guide](configuration.md)** - Managing Claude Desktop configuration files
+- **[GUI Guide](gui-guide.md)** - Using the desktop GUI application
 - **[Examples](examples.md)** - Real-world usage examples and workflows
 
 ### Advanced Topics
@@ -36,10 +37,11 @@ Welcome to the Claude Desktop MCP Playground documentation!
 Model Context Protocol (MCP) is an open standard that enables AI assistants to securely connect to local and remote resources like filesystems, databases, and APIs. 
 
 Claude Desktop MCP Playground makes it easy to:
-- **Discover** available MCP servers from the official registry
-- **Install** servers with automatic configuration
-- **Manage** your Claude Desktop MCP configuration
-- **Configure** servers with guided setup
+- **Discover** 44+ available MCP servers from official and community registries
+- **Install** servers with automatic configuration via CLI or GUI
+- **Manage** your Claude Desktop MCP configuration with visual tools
+- **Monitor** server status and performance in real-time
+- **Configure** servers with guided setup and forms
 
 ## 🆘 Need Help?
 

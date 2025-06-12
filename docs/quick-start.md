@@ -5,7 +5,7 @@ Get up and running with Claude Desktop MCP Playground in minutes!
 ## 🎯 Goal
 
 By the end of this guide, you'll have:
-- ✅ Installed the `pg` command-line tool
+- ✅ Installed the `pg` command-line tool and GUI application
 - ✅ Discovered and installed your first MCP server
 - ✅ Configured Claude Desktop to use the server
 
@@ -32,7 +32,7 @@ pip install -e .
 
 ## 🔍 Step 2: Discover Servers
 
-Search the registry of 30+ available MCP servers:
+Search the registry of 44+ available MCP servers:
 
 ```bash
 # Search for file-related servers
