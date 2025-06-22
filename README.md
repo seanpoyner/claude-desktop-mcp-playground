@@ -219,6 +219,21 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - [Official MCP Servers Repository](https://github.com/modelcontextprotocol/servers)
 - All contributors to the MCP ecosystem
 
+## 🔧 Recent Updates
+
+### Obsidian MCP Server Support (Latest)
+Now supports **both** Obsidian MCP server options:
+- **`obsidian`** (`mcp-obsidian`): Direct file access - `pg config install obsidian --arg vault_path="/path/to/vault"`
+- **`obsidian-mcp-server`**: Advanced REST API integration - `pg config install obsidian-mcp-server --env OBSIDIAN_API_KEY="your-key"`
+
+**Key fixes:**
+- ✅ Fixed command line argument configuration for `mcp-obsidian`
+- ✅ Added advanced `obsidian-mcp-server` with atomic operations and caching
+- ✅ Support for both servers simultaneously
+- ✅ Comprehensive setup instructions for Local REST API plugin
+
+See [docs/obsidian-server-update.md](docs/obsidian-server-update.md) for detailed comparison and setup guide.
+
 ## 🆘 Support
 
 - [Documentation](docs/)

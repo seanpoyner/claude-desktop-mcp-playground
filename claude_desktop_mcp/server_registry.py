@@ -802,19 +802,39 @@ class MCPServerRegistry:
                 }
             },
             "obsidian": {
-                "name": "Obsidian MCP Server",
-                "description": "Interact with Obsidian vaults. Read, create, edit and manage notes and tags. Provides tools for note management, search, and tag operations.",
+                "name": "Obsidian MCP Server (Direct File Access)",
+                "description": "Direct file system access to Obsidian vaults. Read, create, edit and manage notes and tags through direct file operations.",
                 "category": "community",
-                "package": "obsidian-mcp",
+                "package": "mcp-obsidian",
                 "install_method": "npm",
                 "command": "npx",
-                "args_template": ["-y", "obsidian-mcp", "<vault_path1>", "<vault_path2>"],
-                "required_args": ["vault_path1"],
-                "optional_args": ["vault_path2"],
+                "args_template": ["-y", "mcp-obsidian", "<vault_path>"],
+                "required_args": ["vault_path"],
+                "optional_args": [],
                 "env_vars": {},
-                "setup_help": "Provide the absolute path to your Obsidian vault directory. You can specify multiple vault paths as additional arguments. IMPORTANT: Backup your vault before use as this server has read/write access.",
-                "example_usage": "Read/create/edit notes, search vault contents, manage tags, move/delete notes",
+                "setup_help": "Provide the absolute path to your Obsidian vault directory as a command line argument. IMPORTANT: Backup your vault before use as this server has read/write access.",
+                "example_usage": "Read/create/edit notes, search vault contents, manage tags, move/delete notes via direct file system access",
                 "homepage": "https://github.com/StevenStavrakis/obsidian-mcp"
+            },
+            "obsidian-mcp-server": {
+                "name": "Obsidian MCP Server (REST API)",
+                "description": "Advanced Obsidian vault integration using the Local REST API plugin. Provides comprehensive note management, frontmatter editing, tag operations, and search capabilities with atomic operations and caching.",
+                "category": "community",
+                "package": "obsidian-mcp-server",
+                "install_method": "npm",
+                "command": "npx",
+                "args_template": ["obsidian-mcp-server"],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {
+                    "OBSIDIAN_API_KEY": "API key from Obsidian Local REST API plugin settings",
+                    "OBSIDIAN_BASE_URL": "Base URL for Obsidian API (default: http://127.0.0.1:27123)",
+                    "OBSIDIAN_VERIFY_SSL": "Whether to verify SSL certificates (default: false)",
+                    "OBSIDIAN_ENABLE_CACHE": "Enable vault caching for performance (default: true)"
+                },
+                "setup_help": "1. Install 'Local REST API' plugin in Obsidian from Community plugins. 2. Enable the plugin and copy the API key from plugin settings. 3. Configure OBSIDIAN_API_KEY environment variable. 4. Optionally set OBSIDIAN_BASE_URL if using HTTPS (https://localhost:27124). Default uses HTTP on port 27123.",
+                "example_usage": "Advanced note operations, atomic frontmatter editing, comprehensive search, tag management, directory operations with caching",
+                "homepage": "https://github.com/cyanheads/obsidian-mcp-server"
             },
             "registry-manager": {
                 "name": "Registry Manager",
@@ -1171,4 +1191,66 @@ class MCPServerRegistry:
             "env": env_vars,
             "package": server.get("package", ""),
             "install_method": server.get("install_method", "npm")
+
+            # Custom servers (managed by registry-manager)
+            "wikidata":   "name": "Wikidata MCP Server",
+                "description": "A server implementation for Wikidata API using the Model Context Protocol (MCP). Provides tools to interact with Wikidata, such as searching identifiers (entity and property), extracting metadata (label and description) and executing SPARQL queries.",
+                "category": "community",
+                "install_method": "uvx",
+                "command": "uvx",
+                "args_template": [
+                                "@zzaebok/mcp-wikidata"
+                ],
+                "required_args": [],
+                "optional_args": [],
+                "env_vars": {},
+                "homepage": "https://github.com/zzaebok/mcp-wikidata",
+                "package": "@zzaebok/mcp-wikidata",
+                "repository": "https://github.com/zzaebok/mcp-wikidata",
+                "setup_help": "Install via uvx with package @zzaebok/mcp-wikidata",
+                "example_usage": "Use this server to search Wikidata entities and properties, retrieve metadata, and execute SPARQL queries. Available tools: search_entity, search_property, get_properties, execute_sparql, get_metadata"
+},
+            "spotify":   "name": "Spotify MCP",
+                "description": "MCP server to connect Claude with Spotify. Features include playback control (start, pause, skip), search for tracks/albums/artists/playlists, get info about media, manage Spotify queue, and manage/create/update playlists. Requires Spotify Premium account.",
+                "category": "community",
+                "install_method": "git",
+                "command": "uv",
+                "args_template": [
+                                "--directory",
+                                "<repo_path>",
+                                "run",
+                                "spotify-mcp"
+                ],
+                "homepage": "https://github.com/varunneal/spotify-mcp",
+                "repository": "https://github.com/varunneal/spotify-mcp",
+                "env_vars": {
+                                "SPOTIFY_CLIENT_ID": "Your Spotify app client ID from developer.spotify.com",
+                                "SPOTIFY_CLIENT_SECRET": "Your Spotify app client secret",
+                                "SPOTIFY_REDIRECT_URI": "Redirect URI (e.g., http://127.0.0.1:8080/callback)"
+                },
+                "required_args": [],
+                "setup_help": "1. Create a Spotify app at https://developer.spotify.com/dashboard\n2. Set redirect URI to http://127.0.0.1:8080/callback\n3. Requires Spotify Premium account\n4. Requires uv version >=0.54\n5. May need to restart Claude Desktop once or twice on first use",
+                "platform": null
+},
+            "protonmail-mcp":   "name": "ProtonMail MCP Server",
+                "description": "Email sending functionality using Protonmail's SMTP service. Allows both Claude Desktop and Cline VSCode extension to send emails with support for CC/BCC, HTML content, and comprehensive error handling.",
+                "homepage": "https://github.com/amotivv/protonmail-mcp",
+                "repository": "https://github.com/amotivv/protonmail-mcp",
+                "install_method": "git",
+                "command": "node",
+                "args_template": [
+                                "<repository_path>/dist/index.js"
+                ],
+                "category": "custom",
+                "env_vars": {
+                                "PROTONMAIL_USERNAME": "Your Protonmail email address",
+                                "PROTONMAIL_PASSWORD": "Your Protonmail SMTP password (not your regular login password)",
+                                "PROTONMAIL_HOST": "SMTP server hostname (default: smtp.protonmail.ch)",
+                                "PROTONMAIL_PORT": "SMTP server port (default: 587 for STARTTLS, 465 for SSL/TLS)",
+                                "PROTONMAIL_SECURE": "Whether to use a secure connection (default: 'false' for port 587, 'true' for port 465)",
+                                "DEBUG": "Enable debug logging (set to 'true' to see detailed logs, 'false' to hide them)"
+                },
+                "setup_help": "1. Clone the repository: git clone https://github.com/amotivv/protonmail-mcp.git\n2. Install dependencies: npm install\n3. Build the project: npm run build\n4. Configure environment variables with your ProtonMail SMTP credentials\n5. Get your SMTP password from ProtonMail settings (not your regular login password)\n6. Reference: https://proton.me/support/smtp-submission",
+                "example_usage": "Send emails with support for multiple recipients, CC/BCC, plain text or HTML content. Example: send_email tool with parameters: to, subject, body, isHtml (optional), cc (optional), bcc (optional)"
+},
         }
