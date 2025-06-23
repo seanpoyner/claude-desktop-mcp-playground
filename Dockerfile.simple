@@ -1,0 +1,64 @@
+# MCP Server Manager Testing Environment (Simplified)
+# This provides a lightweight testing environment without heavy ML dependencies
+
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    make \
+    build-essential \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV for Python package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Set working directory
+WORKDIR /app
+
+# Clone the repository
+RUN git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git .
+
+# Install only the core dependencies (not the ML/AI requirements)
+RUN pip install click rich flask flask-cors pytest
+
+# Install the package in development mode
+RUN pip install -e .
+
+# Install Node dependencies for GUI (if needed)
+WORKDIR /app/mcp-gui
+RUN npm install || echo "GUI dependencies optional"
+
+# Back to main directory
+WORKDIR /app
+
+# Create test configuration directory
+RUN mkdir -p /root/.config/Claude
+
+# Set up environment for testing
+ENV CLAUDE_DESKTOP_CONFIG_PATH=/root/.config/Claude/claude_desktop_config.json
+ENV PYTHONPATH=/app:$PYTHONPATH
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+echo "MCP Server Manager Testing Environment"\n\
+echo "======================================"\n\
+echo ""\n\
+echo "Available commands:"\n\
+echo "  pg --help                 # CLI help"\n\
+echo "  pg config search          # Search servers"\n\
+echo "  pg setup                  # Run setup wizard"\n\
+echo "  python -m pytest tests/   # Run tests"\n\
+echo ""\n\
+echo "To test installation:"\n\
+echo "  ./install-full.sh         # Full installation"\n\
+echo ""\n\
+bash' > /app/start.sh && chmod +x /app/start.sh
+
+# Default command
+CMD ["/app/start.sh"]

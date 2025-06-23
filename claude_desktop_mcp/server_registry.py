@@ -1210,7 +1210,8 @@ class MCPServerRegistry:
                 "setup_help": "Install via uvx with package @zzaebok/mcp-wikidata",
                 "example_usage": "Use this server to search Wikidata entities and properties, retrieve metadata, and execute SPARQL queries. Available tools: search_entity, search_property, get_properties, execute_sparql, get_metadata"
 },
-            "spotify":   "name": "Spotify MCP",
+            "spotify": {
+                "name": "Spotify MCP",
                 "description": "MCP server to connect Claude with Spotify. Features include playback control (start, pause, skip), search for tracks/albums/artists/playlists, get info about media, manage Spotify queue, and manage/create/update playlists. Requires Spotify Premium account.",
                 "category": "community",
                 "install_method": "git",
@@ -1231,8 +1232,9 @@ class MCPServerRegistry:
                 "required_args": [],
                 "setup_help": "1. Create a Spotify app at https://developer.spotify.com/dashboard\n2. Set redirect URI to http://127.0.0.1:8080/callback\n3. Requires Spotify Premium account\n4. Requires uv version >=0.54\n5. May need to restart Claude Desktop once or twice on first use",
                 "platform": null
-},
-            "protonmail-mcp":   "name": "ProtonMail MCP Server",
+            },
+            "protonmail-mcp": {
+                "name": "ProtonMail MCP Server",
                 "description": "Email sending functionality using Protonmail's SMTP service. Allows both Claude Desktop and Cline VSCode extension to send emails with support for CC/BCC, HTML content, and comprehensive error handling.",
                 "homepage": "https://github.com/amotivv/protonmail-mcp",
                 "repository": "https://github.com/amotivv/protonmail-mcp",
@@ -1252,5 +1254,80 @@ class MCPServerRegistry:
                 },
                 "setup_help": "1. Clone the repository: git clone https://github.com/amotivv/protonmail-mcp.git\n2. Install dependencies: npm install\n3. Build the project: npm run build\n4. Configure environment variables with your ProtonMail SMTP credentials\n5. Get your SMTP password from ProtonMail settings (not your regular login password)\n6. Reference: https://proton.me/support/smtp-submission",
                 "example_usage": "Send emails with support for multiple recipients, CC/BCC, plain text or HTML content. Example: send_email tool with parameters: to, subject, body, isHtml (optional), cc (optional), bcc (optional)"
-},
+            }
+        }
+        
+        # Load custom servers from external JSON files
+        custom_servers = self._load_custom_servers()
+        servers.update(custom_servers)
+        
+        return servers
+    
+    def _load_custom_servers(self) -> Dict[str, Dict[str, Any]]:
+        """Load custom server configurations from JSON files"""
+        custom_servers = {}
+        
+        # Look for custom server JSON files
+        custom_paths = [
+            Path.home() / ".config" / "claude-mcp" / "servers",
+            Path("/etc/claude-mcp/servers"),
+            Path("./mcp-servers")
+        ]
+        
+        for base_path in custom_paths:
+            if base_path.exists() and base_path.is_dir():
+                for json_file in base_path.glob("*.json"):
+                    try:
+                        with open(json_file, 'r') as f:
+                            data = json.load(f)
+                            if isinstance(data, dict):
+                                # Single server definition
+                                if "name" in data and "command" in data:
+                                    server_id = json_file.stem
+                                    custom_servers[server_id] = data
+                                # Multiple server definitions
+                                else:
+                                    for server_id, server_data in data.items():
+                                        if isinstance(server_data, dict):
+                                            custom_servers[server_id] = server_data
+                    except (json.JSONDecodeError, IOError) as e:
+                        print(f"Warning: Failed to load {json_file}: {e}")
+        
+        return custom_servers
+    
+    def search(self, query: str = "") -> List[Dict[str, Any]]:
+        """Search for servers by name or description"""
+        if not query:
+            return list(self.servers.values())
+        
+        query_lower = query.lower()
+        results = []
+        
+        for server_id, server_info in self.servers.items():
+            if (query_lower in server_info.get("name", "").lower() or
+                query_lower in server_info.get("description", "").lower() or
+                query_lower in server_id.lower()):
+                results.append({**server_info, "id": server_id})
+        
+        return results
+    
+    def get_server(self, server_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific server by ID"""
+        return self.servers.get(server_id)
+    
+    def get_install_command(self, server_id: str) -> Optional[Dict[str, Any]]:
+        """Get installation command details for a server"""
+        server = self.get_server(server_id)
+        if not server:
+            return None
+        
+        return {
+            "method": server.get("install_method", "npm"),
+            "package": server.get("package", server_id),
+            "command": server.get("command", "npx"),
+            "args_template": server.get("args_template", []),
+            "required_args": server.get("required_args", []),
+            "optional_args": server.get("optional_args", []),
+            "env_vars": server.get("env_vars", {}),
+            "platform": server.get("platform")
         }

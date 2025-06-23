@@ -1,0 +1,88 @@
+# Windows-compatible testing environment using Wine
+# This provides better Windows compatibility testing
+
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Enable 32-bit architecture for Wine
+RUN dpkg --add-architecture i386
+
+# Install Wine and dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    software-properties-common \
+    && wget -nc https://dl.winehq.org/wine-builds/winehq.key \
+    && apt-key add winehq.key \
+    && add-apt-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ jammy main' \
+    && apt-get update \
+    && apt-get install -y --install-recommends \
+    winehq-stable \
+    cabextract \
+    git \
+    curl \
+    make \
+    build-essential \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install winetricks for easier Windows software installation
+RUN wget https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
+    && chmod +x winetricks \
+    && mv winetricks /usr/local/bin
+
+# Set up Wine environment
+ENV WINEARCH=win64
+ENV WINEPREFIX=/root/.wine
+RUN winecfg
+
+# Install Windows Python via Wine
+RUN cd /tmp \
+    && wget https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe \
+    && wine python-3.10.11-amd64.exe /quiet InstallAllUsers=1 PrependPath=1 \
+    && rm python-3.10.11-amd64.exe
+
+# Install Node.js for Windows via Wine
+RUN cd /tmp \
+    && wget https://nodejs.org/dist/v18.18.0/node-v18.18.0-x86.msi \
+    && wine msiexec /i node-v18.18.0-x86.msi /quiet \
+    && rm node-v18.18.0-x86.msi
+
+# Clone repository
+WORKDIR /app
+RUN git clone https://github.com/seanpoyner/claude-desktop-mcp-playground.git .
+
+# Create Windows-style paths
+RUN mkdir -p "/root/.wine/drive_c/Users/root/AppData/Roaming/Claude"
+
+# Install Python dependencies (Linux side for comparison)
+RUN pip3 install -r requirements.txt
+
+# Create test scripts
+RUN echo '@echo off\n\
+echo MCP Server Manager Windows Testing Environment\n\
+echo ============================================\n\
+echo.\n\
+echo Available commands:\n\
+echo   python pg --help          - CLI help\n\
+echo   python pg config search   - Search servers\n\
+echo   python pg setup           - Run setup wizard\n\
+echo.\n\
+echo Configuration location:\n\
+echo   %%APPDATA%%\\Claude\\claude_desktop_config.json\n\
+echo.\n\
+cmd' > /app/start.bat
+
+# Windows PowerShell test script
+RUN echo 'Write-Host "MCP Server Manager PowerShell Testing" -ForegroundColor Green\n\
+Write-Host "====================================" -ForegroundColor Green\n\
+Write-Host ""\n\
+Write-Host "Testing PowerShell installer compatibility..."\n\
+Write-Host "Config Path: $env:APPDATA\\Claude\\claude_desktop_config.json"\n\
+Write-Host ""\n\
+$PSVersionTable' > /app/test.ps1
+
+CMD ["wine", "cmd", "/k", "C:\\app\\start.bat"]

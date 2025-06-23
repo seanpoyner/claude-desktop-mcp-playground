@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mcp-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    image: mcp-server-manager-test
+    container_name: mcp-test-env
+    volumes:
+      # Mount local code for development
+      - ./claude_desktop_mcp:/app/claude_desktop_mcp
+      - ./tests:/app/tests
+      # Persist configuration
+      - mcp-config:/root/.config/Claude
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - CLAUDE_DESKTOP_CONFIG_PATH=/root/.config/Claude/claude_desktop_config.json
+    stdin_open: true
+    tty: true
+    networks:
+      - mcp-network
+
+  # Optional: Windows testing with Wine
+  mcp-wine-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.wine
+    image: mcp-server-manager-wine
+    container_name: mcp-wine-env
+    volumes:
+      - ./claude_desktop_mcp:/app/claude_desktop_mcp
+      - ./tests:/app/tests
+      - wine-prefix:/root/.wine
+    environment:
+      - WINEARCH=win64
+      - WINEPREFIX=/root/.wine
+    stdin_open: true
+    tty: true
+    networks:
+      - mcp-network
+
+volumes:
+  mcp-config:
+  wine-prefix:
+
+networks:
+  mcp-network:
+    driver: bridge
