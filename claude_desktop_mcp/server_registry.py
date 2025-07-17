@@ -1191,77 +1191,7 @@ class MCPServerRegistry:
             "env": env_vars,
             "package": server.get("package", ""),
             "install_method": server.get("install_method", "npm")
-
-            # Custom servers (managed by registry-manager)
-            "wikidata":   "name": "Wikidata MCP Server",
-                "description": "A server implementation for Wikidata API using the Model Context Protocol (MCP). Provides tools to interact with Wikidata, such as searching identifiers (entity and property), extracting metadata (label and description) and executing SPARQL queries.",
-                "category": "community",
-                "install_method": "uvx",
-                "command": "uvx",
-                "args_template": [
-                                "@zzaebok/mcp-wikidata"
-                ],
-                "required_args": [],
-                "optional_args": [],
-                "env_vars": {},
-                "homepage": "https://github.com/zzaebok/mcp-wikidata",
-                "package": "@zzaebok/mcp-wikidata",
-                "repository": "https://github.com/zzaebok/mcp-wikidata",
-                "setup_help": "Install via uvx with package @zzaebok/mcp-wikidata",
-                "example_usage": "Use this server to search Wikidata entities and properties, retrieve metadata, and execute SPARQL queries. Available tools: search_entity, search_property, get_properties, execute_sparql, get_metadata"
-},
-            "spotify": {
-                "name": "Spotify MCP",
-                "description": "MCP server to connect Claude with Spotify. Features include playback control (start, pause, skip), search for tracks/albums/artists/playlists, get info about media, manage Spotify queue, and manage/create/update playlists. Requires Spotify Premium account.",
-                "category": "community",
-                "install_method": "git",
-                "command": "uv",
-                "args_template": [
-                                "--directory",
-                                "<repo_path>",
-                                "run",
-                                "spotify-mcp"
-                ],
-                "homepage": "https://github.com/varunneal/spotify-mcp",
-                "repository": "https://github.com/varunneal/spotify-mcp",
-                "env_vars": {
-                                "SPOTIFY_CLIENT_ID": "Your Spotify app client ID from developer.spotify.com",
-                                "SPOTIFY_CLIENT_SECRET": "Your Spotify app client secret",
-                                "SPOTIFY_REDIRECT_URI": "Redirect URI (e.g., http://127.0.0.1:8080/callback)"
-                },
-                "required_args": [],
-                "setup_help": "1. Create a Spotify app at https://developer.spotify.com/dashboard\n2. Set redirect URI to http://127.0.0.1:8080/callback\n3. Requires Spotify Premium account\n4. Requires uv version >=0.54\n5. May need to restart Claude Desktop once or twice on first use",
-                "platform": null
-            },
-            "protonmail-mcp": {
-                "name": "ProtonMail MCP Server",
-                "description": "Email sending functionality using Protonmail's SMTP service. Allows both Claude Desktop and Cline VSCode extension to send emails with support for CC/BCC, HTML content, and comprehensive error handling.",
-                "homepage": "https://github.com/amotivv/protonmail-mcp",
-                "repository": "https://github.com/amotivv/protonmail-mcp",
-                "install_method": "git",
-                "command": "node",
-                "args_template": [
-                                "<repository_path>/dist/index.js"
-                ],
-                "category": "custom",
-                "env_vars": {
-                                "PROTONMAIL_USERNAME": "Your Protonmail email address",
-                                "PROTONMAIL_PASSWORD": "Your Protonmail SMTP password (not your regular login password)",
-                                "PROTONMAIL_HOST": "SMTP server hostname (default: smtp.protonmail.ch)",
-                                "PROTONMAIL_PORT": "SMTP server port (default: 587 for STARTTLS, 465 for SSL/TLS)",
-                                "PROTONMAIL_SECURE": "Whether to use a secure connection (default: 'false' for port 587, 'true' for port 465)",
-                                "DEBUG": "Enable debug logging (set to 'true' to see detailed logs, 'false' to hide them)"
-                },
-                "setup_help": "1. Clone the repository: git clone https://github.com/amotivv/protonmail-mcp.git\n2. Install dependencies: npm install\n3. Build the project: npm run build\n4. Configure environment variables with your ProtonMail SMTP credentials\n5. Get your SMTP password from ProtonMail settings (not your regular login password)\n6. Reference: https://proton.me/support/smtp-submission",
-                "example_usage": "Send emails with support for multiple recipients, CC/BCC, plain text or HTML content. Example: send_email tool with parameters: to, subject, body, isHtml (optional), cc (optional), bcc (optional)"
-            }
         }
-        
-        # Load custom servers from external JSON files
-        custom_servers = self._load_custom_servers()
-        servers.update(custom_servers)
-        
-        return servers
     
     def _load_custom_servers(self) -> Dict[str, Dict[str, Any]]:
         """Load custom server configurations from JSON files"""
